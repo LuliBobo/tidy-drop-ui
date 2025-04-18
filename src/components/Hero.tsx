@@ -1,13 +1,47 @@
-
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Shield, FileCheck, Play } from 'lucide-react';
+import { Shield, FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
 
 const Hero = () => {
+  const [dragActive, setDragActive] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleFiles = (newFiles: FileList | File[]) => {
+    const fileArray = Array.from(newFiles);
+    setFiles(prev => [...prev, ...fileArray]);
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (e.target.files) {
+      handleFiles(e.target.files);
     }
   };
 
@@ -49,61 +83,55 @@ const Hero = () => {
           
           <div className="relative w-full max-w-md lg:max-w-lg">
             <div className="relative rounded-2xl bg-white p-2 shadow-xl dark:bg-gray-800 animate-float">
-              <div className="rounded-xl bg-gray-100 p-6 dark:bg-gray-700">
+              <div 
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`rounded-xl bg-gray-100 p-6 dark:bg-gray-700 transition-all duration-300 ${
+                  dragActive ? 'border-2 border-droptidy-purple border-dashed' : ''
+                }`}
+              >
                 <div className="mb-4 flex items-center gap-2">
-                  <FileCheck className="h-6 w-6 text-droptidy-purple" />
-                  <span className="font-medium">DropTidy Privacy Cleanup</span>
+                  <Upload className="h-6 w-6 text-droptidy-purple" />
+                  <span className="font-medium">Upload or Drag Files</span>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-droptidy-purple/20 flex items-center justify-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 16L15 10" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M9 10H15V16" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Metadata Removed</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">GPS, EXIF, Camera Info</p>
-                    </div>
+                <div 
+                  onClick={() => inputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex justify-center mb-4 space-x-4">
+                    <FileImage className="h-12 w-12 text-droptidy-purple opacity-50" />
+                    <FileVideo className="h-12 w-12 text-droptidy-purple opacity-50" />
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-droptidy-purple/20 flex items-center justify-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 16L15 10" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M9 10H15V16" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Faces Anonymized</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">AI Privacy Protection</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-droptidy-purple/20 flex items-center justify-center">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 16L15 10" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M9 10H15V16" stroke="#9b87f5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Watermark Removed</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Clean & Professional</p>
-                    </div>
-                  </div>
+                  <p className="text-gray-500">Drag & Drop Photos/Videos or <span className="text-droptidy-purple">Browse</span></p>
                 </div>
-                
-                <div className="mt-6 h-2 w-full rounded-full bg-gray-200 dark:bg-gray-600">
-                  <div className="h-2 rounded-full bg-droptidy-purple" style={{ width: "100%" }}></div>
-                </div>
+
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*,video/*"
+                  ref={inputRef}
+                  onChange={handleChange}
+                  className="hidden" 
+                />
+
+                {files.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Uploaded Files:</p>
+                    <ul className="space-y-2">
+                      {files.map((file, index) => (
+                        <li key={index} className="flex items-center space-x-2 bg-white p-2 rounded-md shadow-sm">
+                          {file.type.startsWith('image/') ? <FileImage className="h-5 w-5 text-droptidy-purple" /> : <FileVideo className="h-5 w-5 text-droptidy-purple" />}
+                          <span className="text-xs truncate">{file.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
-            
-            <div className="absolute -left-8 -top-8 h-48 w-48 rounded-full bg-droptidy-blue/10 blur-3xl"></div>
-            <div className="absolute -bottom-8 -right-8 h-48 w-48 rounded-full bg-droptidy-purple/20 blur-3xl"></div>
           </div>
         </div>
       </div>
