@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Shield, FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
@@ -57,7 +58,9 @@ const Hero = () => {
             
             <h1 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
               Protect Your Privacy. <br />
-              <span className="text-droptidy-purple">Clean Your Media</span> with One Click.
+              <span className="bg-gradient-to-r from-[#A78BFA] to-[#6366F1] bg-clip-text text-transparent">
+                Clean Your Media
+              </span> with One Click.
             </h1>
             
             <p className="mb-8 text-lg text-gray-600 dark:text-gray-300">
@@ -66,13 +69,13 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-wrap gap-4">
-              <Button className="bg-droptidy-purple hover:bg-droptidy-purple-dark text-white" size="lg">
+              <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white" size="lg">
                 Try Free
               </Button>
               
               <Button 
                 variant="outline" 
-                className="border-droptidy-purple text-droptidy-purple hover:bg-droptidy-purple/10" 
+                className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10" 
                 size="lg"
                 onClick={() => scrollToSection('features')}
               >
