@@ -1,6 +1,4 @@
-
 import React from 'react';
-import { Shield } from 'lucide-react';
 
 const Footer = () => {
   const scrollToSection = (id: string) => {
@@ -18,7 +16,11 @@ const Footer = () => {
         <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-6 w-6 text-droptidy-purple" />
+              <img 
+                src="/lovable-uploads/07faf07e-5cbe-4fa5-9dd1-b74af8b42f02.png" 
+                alt="DropTidy Logo" 
+                className="h-8 w-8"
+              />
               <span className="text-xl font-bold">DropTidy</span>
             </div>
             <p className="text-gray-400 mb-4">

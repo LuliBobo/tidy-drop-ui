@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Shield, FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
+import { FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
 
 const Hero = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -52,7 +52,11 @@ const Hero = () => {
         <div className="flex flex-col items-center justify-center text-center">
           <div className="max-w-3xl w-full">
             <div className="mb-6 flex items-center justify-center gap-2">
-              <Shield className="h-6 w-6 text-droptidy-purple" />
+              <img 
+                src="/lovable-uploads/07faf07e-5cbe-4fa5-9dd1-b74af8b42f02.png" 
+                alt="DropTidy Logo" 
+                className="h-8 w-8"
+              />
               <span className="text-sm font-medium text-droptidy-purple">Privacy-First Technology</span>
             </div>
             

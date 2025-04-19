@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Shield, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Navbar = () => {
@@ -37,7 +36,11 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-droptidy-purple" />
+            <img 
+              src="/lovable-uploads/07faf07e-5cbe-4fa5-9dd1-b74af8b42f02.png" 
+              alt="DropTidy Logo" 
+              className="h-8 w-8"
+            />
             <span className="text-xl font-bold">DropTidy</span>
           </div>
           
@@ -94,7 +97,6 @@ const Navbar = () => {
         </div>
       </div>
       
-      {/* Mobile menu */}
       {isMobile && isMenuOpen && (
         <div className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
           <div className="container mx-auto px-4 py-4">
