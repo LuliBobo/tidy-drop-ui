@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -8,8 +10,11 @@ const Footer = () => {
       });
     }
   };
+  
   const year = new Date().getFullYear();
-  return <footer className="bg-gray-900 py-12 text-white">
+  
+  return (
+    <footer className="bg-gray-900 py-12 text-white">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
@@ -81,9 +86,9 @@ const Footer = () => {
             <h3 className="mb-4 text-lg font-semibold">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
@@ -104,6 +109,8 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
+
 export default Footer;
