@@ -1,30 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Menu, X, Moon, Sun } from 'lucide-react';
-import { useIsMobile } from "@/hooks/use-mobile";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Button } from "@/components/ui/button"
+import { Menu } from "lucide-react"
+import DropTidyLogo from "./DropTidyLogo";
+
+interface NavLink {
+  label: string;
+  href: string;
+}
+
+const navLinks: NavLink[] = [
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'Security', href: '#security' },
+  { label: 'Testimonials', href: '#testimonials' },
+];
+
 const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-    }
-    return 'light';
-  });
-  const isMobile = useIsMobile();
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      localStorage.setItem('theme', theme);
-    }
-  }, [theme]);
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -34,94 +40,56 @@ const Navbar = () => {
       setIsMenuOpen(false);
     }
   };
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  return <nav className={`fixed top-0 z-50 w-full transition-all duration-300 
-      ${isScrolled || isMenuOpen ? 'bg-white/90 backdrop-blur-md shadow-sm dark:bg-gray-900/90' : 'bg-transparent'}`}>
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection('hero')}>
-            
-            <span className="text-xl font-bold select-none">DropTidy</span>
-          </div>
 
-          {!isMobile && <div className="flex items-center space-x-6">
-              <button onClick={() => scrollToSection('hero')} className="text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300 dark:hover:text-white">
-                Home
-              </button>
-              <button onClick={() => scrollToSection('features')} className="text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300 dark:hover:text-white">
-                Features
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300 dark:hover:text-white">
-                Pricing
-              </button>
-              <button onClick={() => scrollToSection('video')} className="text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300 dark:hover:text-white">
-                Video
-              </button>
-              <button onClick={() => scrollToSection('security')} className="text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300 dark:hover:text-white">
-                About
-              </button>
-              <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggleTheme} className="ml-2">
-                {theme === 'dark' ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
-                <span className="sr-only">Toggle dark mode</span>
-              </Button>
-            </div>}
-
-          {!isMobile && <div className="flex items-center space-x-4">
-              <Button variant="link" className="text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                Log in
-              </Button>
-              <Button className="bg-droptidy-purple hover:bg-droptidy-purple-dark">
-                Try Free
-              </Button>
-            </div>}
-
-          {isMobile && <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>}
+  return (
+    <nav className="fixed top-0 left-0 w-full bg-background z-50 shadow">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <DropTidyLogo size={36} />
+          <span className="text-xl font-bold text-indigo-600" aria-label="DropTidy" style={{letterSpacing: "0.04em"}}>
+            DropTidy
+          </span>
         </div>
-      </div>
+        <div className="hidden md:flex items-center space-x-4">
+          {navLinks.map((link) => (
+            <button key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="text-gray-700 hover:text-indigo-500 transition-colors">
+              {link.label}
+            </button>
+          ))}
+          <Link to="/privacy">
+            <Button variant="outline">Privacy Policy</Button>
+          </Link>
+        </div>
 
-      {isMobile && isMenuOpen && <div className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-col space-y-4">
-              <div className="flex justify-between items-center">
-                <button onClick={() => scrollToSection('hero')} className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                  Home
-                </button>
-                <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggleTheme}>
-                  {theme === 'dark' ? <Sun className="h-5 w-5" aria-hidden="true" /> : <Moon className="h-5 w-5" aria-hidden="true" />}
-                  <span className="sr-only">Toggle dark mode</span>
+        {/* Mobile Menu */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" className="md:hidden">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:w-64">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+              <SheetDescription>
+                Navigate through DropTidy
+              </SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              {navLinks.map((link) => (
+                <Button variant="ghost" key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="justify-start">
+                  {link.label}
                 </Button>
-              </div>
-              <button onClick={() => scrollToSection('features')} className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                Features
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                Pricing
-              </button>
-              <button onClick={() => scrollToSection('video')} className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                Video
-              </button>
-              <button onClick={() => scrollToSection('security')} className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300">
-                About
-              </button>
-              <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="outline" className="justify-center w-full">
-                  Log in
-                </Button>
-                <Button className="justify-center w-full bg-droptidy-purple hover:bg-droptidy-purple-dark">
-                  Try Free
-                </Button>
-              </div>
+              ))}
+              <Link to="/privacy">
+                <Button variant="outline" className="justify-start">Privacy Policy</Button>
+              </Link>
             </div>
-          </div>
-        </div>}
-    </nav>;
+          </SheetContent>
+        </Sheet>
+      </div>
+    </nav>
+  );
 };
+
 export default Navbar;

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import DropTidyLogo from "./DropTidyLogo";
+
 const Footer = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -15,7 +17,7 @@ const Footer = () => {
         <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              
+              <DropTidyLogo size={36} />
               <span className="text-xl font-bold select-none">DropTidy</span>
             </div>
             <p className="text-gray-400 mb-4">
@@ -25,7 +27,6 @@ const Footer = () => {
               © {year} DropTidy. All rights reserved.
             </p>
           </div>
-          
           <div>
             <h3 className="mb-4 text-lg font-semibold">Company</h3>
             <ul className="space-y-2">
@@ -51,7 +52,6 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-          
           <div>
             <h3 className="mb-4 text-lg font-semibold">Product</h3>
             <ul className="space-y-2">
@@ -77,7 +77,6 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-          
           <div>
             <h3 className="mb-4 text-lg font-semibold">Legal</h3>
             <ul className="space-y-2">
