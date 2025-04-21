@@ -1,13 +1,34 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Moon, Sun } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('theme') as 'light' | 'dark') || 'light';
+    }
+    return 'light';
+  });
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', theme);
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -68,6 +89,20 @@ const Navbar = () => {
               >
                 About
               </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Toggle dark mode"
+                onClick={toggleTheme}
+                className="ml-2"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <Moon className="h-5 w-5" aria-hidden="true" />
+                )}
+                <span className="sr-only">Toggle dark mode</span>
+              </Button>
             </div>
           )}
 
@@ -99,12 +134,27 @@ const Navbar = () => {
         <div className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
           <div className="container mx-auto px-4 py-4">
             <div className="flex flex-col space-y-4">
-              <button
-                onClick={() => scrollToSection('hero')}
-                className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300"
-              >
-                Home
-              </button>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => scrollToSection('hero')}
+                  className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300"
+                >
+                  Home
+                </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Toggle dark mode"
+                  onClick={toggleTheme}
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <Moon className="h-5 w-5" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">Toggle dark mode</span>
+                </Button>
+              </div>
               <button
                 onClick={() => scrollToSection('features')}
                 className="flex w-full justify-start py-2 text-left text-sm font-medium text-gray-700 hover:text-droptidy-purple dark:text-gray-300"
