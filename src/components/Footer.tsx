@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-
 const Footer = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -11,20 +9,13 @@ const Footer = () => {
       });
     }
   };
-  
   const year = new Date().getFullYear();
-  
-  return (
-    <footer className="bg-gray-900 py-12 text-white">
+  return <footer className="bg-gray-900 py-12 text-white">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img
-                src="/lovable-uploads/fb0670bb-7b42-40be-8a8c-c8a326ed0c1a.png"
-                alt="DropTidy Logo"
-                className="h-8 w-8"
-              />
+              
               <span className="text-xl font-bold select-none">DropTidy</span>
             </div>
             <p className="text-gray-400 mb-4">
@@ -114,8 +105,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
