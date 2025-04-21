@@ -53,8 +53,13 @@ const Navbar = () => {
       ${isScrolled || isMenuOpen ? 'bg-white/90 backdrop-blur-md shadow-sm dark:bg-gray-900/90' : 'bg-transparent'}`}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">DropTidy</span>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection('hero')}>
+            <img
+              src="/lovable-uploads/fb0670bb-7b42-40be-8a8c-c8a326ed0c1a.png"
+              alt="DropTidy Logo"
+              className="h-8 w-8"
+            />
+            <span className="text-xl font-bold select-none">DropTidy</span>
           </div>
 
           {!isMobile && (
@@ -196,4 +201,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

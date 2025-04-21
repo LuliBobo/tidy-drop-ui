@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -19,8 +20,12 @@ const Footer = () => {
         <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              
-              <span className="text-xl font-bold">DropTidy</span>
+              <img
+                src="/lovable-uploads/fb0670bb-7b42-40be-8a8c-c8a326ed0c1a.png"
+                alt="DropTidy Logo"
+                className="h-8 w-8"
+              />
+              <span className="text-xl font-bold select-none">DropTidy</span>
             </div>
             <p className="text-gray-400 mb-4">
               Privacy-first tools for cleaning and protecting your visual content.
