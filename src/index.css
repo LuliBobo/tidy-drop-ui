@@ -99,3 +99,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.3s;
+  padding: 0.5rem;
+  border-radius: 9999px;
+}
+
+.theme-toggle:focus {
+  outline: 2px solid #6366f1; /* Indigo focus */
+  outline-offset: 2px;
+}
+
+html,
+body,
+.bg-background {
+  transition: background-color 0.4s, color 0.4s;
+}
+
+/* Example dark/light backgrounds if not handled by your framework */
+html.light {
+  background-color: #fff;
+  color: #18181b;
+}
+html.dark {
+  background-color: #18181b;
+  color: #f4f4f5;
+}
