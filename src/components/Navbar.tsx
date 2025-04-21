@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sheet,
@@ -11,6 +11,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
+
+const THEME_KEY = "theme";
+
+function getPreferredTheme() {
+  if (typeof window === "undefined") return "light";
+  const stored = localStorage.getItem(THEME_KEY);
+  if (stored) return stored;
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  return mq.matches ? "dark" : "light";
+}
 
 interface NavLink {
   label: string;
@@ -26,6 +36,27 @@ const navLinks: NavLink[] = [
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
+
+  useEffect(() => {
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(theme);
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
+
+  // Listen to system preference changes
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem(THEME_KEY)) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -59,6 +90,36 @@ const Navbar = () => {
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
+          <button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            {theme === "dark" ? (
+              // Sun icon (light mode)
+              <svg width="24" height="24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="5" fill="currentColor" />
+                <g stroke="currentColor" strokeWidth="2">
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </g>
+              </svg>
+            ) : (
+              // Moon icon (dark mode)
+              <svg width="24" height="24" fill="none" aria-hidden="true">
+                <path
+                  d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
+                  fill="currentColor"
+                />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Mobile Menu */}
@@ -84,6 +145,36 @@ const Navbar = () => {
               <Link to="/privacy">
                 <Button variant="outline" className="justify-start">Privacy Policy</Button>
               </Link>
+              <button
+                className="theme-toggle"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              >
+                {theme === "dark" ? (
+                  // Sun icon (light mode)
+                  <svg width="24" height="24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="5" fill="currentColor" />
+                    <g stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="1" x2="12" y2="3" />
+                      <line x1="12" y1="21" x2="12" y2="23" />
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                      <line x1="1" y1="12" x2="3" y2="12" />
+                      <line x1="21" y1="12" x2="23" y2="12" />
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </g>
+                  </svg>
+                ) : (
+                  // Moon icon (dark mode)
+                  <svg width="24" height="24" fill="none" aria-hidden="true">
+                    <path
+                      d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                )}
+              </button>
             </div>
           </SheetContent>
         </Sheet>
