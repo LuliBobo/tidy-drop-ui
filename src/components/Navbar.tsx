@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -15,10 +14,10 @@ import DropTidyLogo from "./DropTidyLogo";
 
 const THEME_KEY = "theme";
 
-function getPreferredTheme() {
+function getPreferredTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
   const stored = localStorage.getItem(THEME_KEY);
-  if (stored) return stored;
+  if (stored === "light" || stored === "dark") return stored;
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   return mq.matches ? "dark" : "light";
 }
@@ -185,4 +184,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
