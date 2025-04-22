@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import { Menu, Home } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
 
 const THEME_KEY = "theme";
@@ -28,10 +29,10 @@ interface NavLink {
 }
 
 const navLinks: NavLink[] = [
+  { label: 'Home', href: '#hero' },
   { label: 'Features', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'Security', href: '#security' },
-  { label: 'Testimonials', href: '#testimonials' },
 ];
 
 const Navbar = () => {
@@ -184,3 +185,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
