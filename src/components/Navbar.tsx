@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, Home } from "lucide-react"
+import { Menu } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
 
 const THEME_KEY = "theme";
