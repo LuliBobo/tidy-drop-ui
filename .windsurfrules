@@ -1,0 +1,23 @@
+<architecture>
+- Droptidy runs on micro‑services in Docker.
+- Backend: Python 3.12 + FastAPI.
+- Frontend: Next.js 14.
+</architecture>
+
+<naming>
+- Files and functions: snake_case.
+- Classes: PascalCase.
+- Test files: *_test.py.
+</naming>
+
+<api>
+- Base URL: https://api.droptidy.ai/v1
+- Use plural paths: /files, /jobs.
+- Each response is JSON with a "data" key.
+</api>
+
+<abbreviations>
+- FNS = File Normalization Service
+- CLS = Cleaning Logic Service
+- UDL = User Data Layer
+</abbreviations>
