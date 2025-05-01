@@ -10,7 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import { Menu, ShieldCheck } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
 
 const THEME_KEY = "theme";
@@ -77,7 +77,10 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 w-full bg-background z-50 shadow">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <DropTidyLogo size={36} />
+          <div className="flex items-center">
+            <ShieldCheck className="h-6 w-6 text-indigo-600 mr-2" aria-hidden="true" />
+            <DropTidyLogo size={36} />
+          </div>
           <span className="text-xl font-bold text-indigo-600" aria-label="DropTidy" style={{letterSpacing: "0.04em"}}>
             DropTidy
           </span>
