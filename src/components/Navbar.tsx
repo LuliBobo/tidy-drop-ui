@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -38,6 +37,8 @@ const navLinks: NavLink[] = [
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
@@ -73,23 +74,50 @@ const Navbar = () => {
     }
   };
 
+  const handleNavigation = (href: string) => {
+    const sectionId = href.slice(1); // Remove the # character
+    
+    if (isHomePage) {
+      // If on home page, just scroll to section
+      scrollToSection(sectionId);
+    } else {
+      // If on another page, navigate to home with section hash
+      // The hash will be handled after navigation completes
+      setIsMenuOpen(false);
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 w-full bg-background z-50 shadow">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex items-center">
+          <Link to="/" className="flex items-center">
             <ShieldCheck className="h-6 w-6 text-indigo-600 mr-2" aria-hidden="true" />
             <DropTidyLogo size={36} />
-          </div>
+          </Link>
           <span className="text-xl font-bold text-indigo-600" aria-label="DropTidy" style={{letterSpacing: "0.04em"}}>
             DropTidy
           </span>
         </div>
         <div className="hidden md:flex items-center space-x-4">
           {navLinks.map((link) => (
-            <button key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="text-gray-700 hover:text-indigo-500 transition-colors">
-              {link.label}
-            </button>
+            isHomePage ? (
+              <button 
+                key={link.href} 
+                onClick={() => scrollToSection(link.href.slice(1))} 
+                className="text-gray-700 hover:text-indigo-500 transition-colors"
+              >
+                {link.label}
+              </button>
+            ) : (
+              <Link 
+                key={link.href} 
+                to={`/${link.href}`} 
+                className="text-gray-700 hover:text-indigo-500 transition-colors"
+              >
+                {link.label}
+              </Link>
+            )
           ))}
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
@@ -142,9 +170,22 @@ const Navbar = () => {
             </SheetHeader>
             <div className="grid gap-4 py-4">
               {navLinks.map((link) => (
-                <Button variant="ghost" key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="justify-start">
-                  {link.label}
-                </Button>
+                isHomePage ? (
+                  <Button 
+                    variant="ghost" 
+                    key={link.href} 
+                    onClick={() => scrollToSection(link.href.slice(1))} 
+                    className="justify-start"
+                  >
+                    {link.label}
+                  </Button>
+                ) : (
+                  <Link key={link.href} to={`/${link.href}`} className="w-full">
+                    <Button variant="ghost" className="justify-start w-full">
+                      {link.label}
+                    </Button>
+                  </Link>
+                )
               ))}
               <Link to="/privacy">
                 <Button variant="outline" className="justify-start">Privacy Policy</Button>
