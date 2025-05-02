@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import CreateAccount from "./pages/CreateAccount";
 
 // This component handles scrolling to sections when navigating from other pages
 const ScrollToSection = () => {
@@ -42,6 +43,7 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/create-account" element={<CreateAccount />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

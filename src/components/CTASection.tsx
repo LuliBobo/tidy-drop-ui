@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 
 const CTASection = () => {
   const scrollToSection = (id: string) => {
@@ -23,12 +24,14 @@ const CTASection = () => {
           </p>
           
           <div className="flex flex-wrap justify-center gap-4">
-            <Button 
-              size="lg" 
-              className="bg-white text-droptidy-purple hover:bg-gray-100"
-            >
-              Get Started Free
-            </Button>
+            <Link to="/create-account">
+              <Button 
+                size="lg" 
+                className="bg-white text-droptidy-purple hover:bg-gray-100"
+              >
+                Get Started Free
+              </Button>
+            </Link>
             <Button 
               variant="outline" 
               size="lg" 
