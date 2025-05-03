@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import DropTidyLogo from "@/components/DropTidyLogo";
 
 const countries = [
   "United States",
@@ -107,258 +105,251 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:px-20 xl:px-24">
-        <div className="flex flex-col items-center w-full max-w-3xl mx-auto">
-          <div className="flex items-center mb-8">
-            <DropTidyLogo size={40} />
-            <span className="ml-3 text-2xl font-bold text-gray-900">DropTidy</span>
-          </div>
-          
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center text-gray-900">
-                Create your account
-              </CardTitle>
-              <CardDescription className="text-center text-gray-500">
-                Get started with DropTidy today
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="firstName" className="text-sm font-medium">
-                      First name
-                    </Label>
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      className={`${
-                        errors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""
-                      }`}
-                    />
-                    {errors.firstName && (
-                      <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="lastName" className="text-sm font-medium">
-                      Last name
-                    </Label>
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      className={`${
-                        errors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""
-                      }`}
-                    />
-                    {errors.lastName && (
-                      <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="email" className="text-sm font-medium">
-                      Email address
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className={`${
-                        errors.email ? "border-red-500 focus-visible:ring-red-500" : ""
-                      }`}
-                      autoComplete="email"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="password" className="text-sm font-medium">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={`${
-                          errors.password ? "border-red-500 focus-visible:ring-red-500" : ""
-                        }`}
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" aria-hidden="true" />
-                        ) : (
-                          <Eye className="w-4 h-4" aria-hidden="true" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="country" className="text-sm font-medium">
-                      Country
-                    </Label>
-                    <Select
-                      value={formData.country}
-                      onValueChange={(value) => handleSelectChange("country", value)}
-                    >
-                      <SelectTrigger
-                        id="country"
-                        className={`${
-                          errors.country ? "border-red-500 focus-visible:ring-red-500" : ""
-                        }`}
-                      >
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.country && (
-                      <p className="mt-1 text-xs text-red-600">{errors.country}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="phone" className="text-sm font-medium">
-                      Phone number (optional)
-                    </Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="role" className="text-sm font-medium">
-                      Role
-                    </Label>
-                    <Select
-                      value={formData.role}
-                      onValueChange={(value) => handleSelectChange("role", value)}
-                    >
-                      <SelectTrigger
-                        id="role"
-                        className={`${
-                          errors.role ? "border-red-500 focus-visible:ring-red-500" : ""
-                        }`}
-                      >
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.role && (
-                      <p className="mt-1 text-xs text-red-600">{errors.role}</p>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label htmlFor="referralSource" className="text-sm font-medium">
-                      How did you hear about us?
-                    </Label>
-                    <Select
-                      value={formData.referralSource}
-                      onValueChange={(value) => handleSelectChange("referralSource", value)}
-                    >
-                      <SelectTrigger
-                        id="referralSource"
-                        className={`${
-                          errors.referralSource ? "border-red-500 focus-visible:ring-red-500" : ""
-                        }`}
-                      >
-                        <SelectValue placeholder="Select source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {referralSources.map((source) => (
-                          <SelectItem key={source} value={source}>
-                            {source}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.referralSource && (
-                      <p className="mt-1 text-xs text-red-600">{errors.referralSource}</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="marketing"
-                      checked={marketing}
-                      onCheckedChange={(checked) => setMarketing(checked === true)}
-                    />
-                    <Label htmlFor="marketing" className="text-sm font-normal">
-                      I agree to receive updates from DropTidy
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="newsletter"
-                      checked={newsletter}
-                      onCheckedChange={(checked) => setNewsletter(checked === true)}
-                    />
-                    <Label htmlFor="newsletter" className="text-sm font-normal">
-                      I agree to receive newsletter on file organization and productivity
-                    </Label>
-                  </div>
-                </div>
-                
-                <Button
-                  type="submit"
-                  className="w-full bg-indigo-900 hover:bg-indigo-800 text-white"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Creating account..." : "Sign up"}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter>
-              <div className="w-full text-sm text-center">
-                <Link to="/signin" className="font-medium text-indigo-900 hover:underline">
-                  Already have an account? Log in
-                </Link>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Tabs at the top */}
+      <div className="flex w-full max-w-md mx-auto mt-10 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="w-1/2 py-3 text-center font-medium bg-white text-gray-900 shadow-sm">
+          Sign Up
+        </div>
+        <Link to="/signin" className="w-1/2 py-3 text-center text-gray-600 hover:text-gray-900">
+          Sign In
+        </Link>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full max-w-3xl bg-white rounded-lg shadow p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                  First name
+                </Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="John"
+                  className={`${
+                    errors.firstName ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } mt-1`}
+                />
+                {errors.firstName && (
+                  <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+                )}
               </div>
-            </CardFooter>
-          </Card>
+              
+              <div>
+                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                  Last name
+                </Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Doe"
+                  className={`${
+                    errors.lastName ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } mt-1`}
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email address
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  className={`${
+                    errors.email ? "border-red-500 focus-visible:ring-red-500" : ""
+                  } mt-1`}
+                  autoComplete="email"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`${
+                      errors.password ? "border-red-500 focus-visible:ring-red-500" : ""
+                    }`}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="w-4 h-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="country" className="text-sm font-medium text-gray-700">
+                  Country
+                </Label>
+                <Select
+                  value={formData.country}
+                  onValueChange={(value) => handleSelectChange("country", value)}
+                >
+                  <SelectTrigger
+                    id="country"
+                    className={`${
+                      errors.country ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } mt-1`}
+                  >
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((country) => (
+                      <SelectItem key={country} value={country}>
+                        {country}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.country && (
+                  <p className="mt-1 text-xs text-red-600">{errors.country}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                  Phone number (optional)
+                </Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+1 (555) 123-4567"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                  Role
+                </Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => handleSelectChange("role", value)}
+                >
+                  <SelectTrigger
+                    id="role"
+                    className={`${
+                      errors.role ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } mt-1`}
+                  >
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.role && (
+                  <p className="mt-1 text-xs text-red-600">{errors.role}</p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="referralSource" className="text-sm font-medium text-gray-700">
+                  How did you hear about us?
+                </Label>
+                <Select
+                  value={formData.referralSource}
+                  onValueChange={(value) => handleSelectChange("referralSource", value)}
+                >
+                  <SelectTrigger
+                    id="referralSource"
+                    className={`${
+                      errors.referralSource ? "border-red-500 focus-visible:ring-red-500" : ""
+                    } mt-1`}
+                  >
+                    <SelectValue placeholder="Select an option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {referralSources.map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {source}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.referralSource && (
+                  <p className="mt-1 text-xs text-red-600">{errors.referralSource}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="marketing"
+                  checked={marketing}
+                  onCheckedChange={(checked) => setMarketing(checked === true)}
+                />
+                <Label htmlFor="marketing" className="text-sm font-normal text-gray-700">
+                  I agree to receive updates from DropTidy
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="newsletter"
+                  checked={newsletter}
+                  onCheckedChange={(checked) => setNewsletter(checked === true)}
+                />
+                <Label htmlFor="newsletter" className="text-sm font-normal text-gray-700">
+                  I agree to receive newsletter on file organization and productivity
+                </Label>
+              </div>
+            </div>
+            
+            <Button
+              type="submit"
+              className="w-full bg-indigo-900 hover:bg-indigo-800 text-white font-medium"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Signing up..." : "Sign up"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>

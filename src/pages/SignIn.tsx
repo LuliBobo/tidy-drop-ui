@@ -5,8 +5,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import DropTidyLogo from "@/components/DropTidyLogo";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -48,107 +46,91 @@ const SignIn = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
-        <div className="flex flex-col items-center w-full max-w-sm mx-auto lg:w-96">
-          <div className="flex items-center mb-8">
-            <DropTidyLogo size={40} />
-            <span className="ml-3 text-2xl font-bold text-gray-900">DropTidy</span>
-          </div>
-          
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-center text-gray-900">
-                Sign in to your account
-              </CardTitle>
-              <CardDescription className="text-center text-gray-500">
-                Enter your email and password to sign in
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Email address
-                  </Label>
-                  <div>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={`${
-                        errors.email ? "border-red-500 focus-visible:ring-red-500" : ""
-                      }`}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-                    )}
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Tabs at the top */}
+      <div className="flex w-full max-w-md mx-auto mt-10 bg-gray-100 rounded-lg overflow-hidden">
+        <Link to="/signup" className="w-1/2 py-3 text-center text-gray-600 hover:text-gray-900">
+          Sign Up
+        </Link>
+        <div className="w-1/2 py-3 text-center font-medium bg-white text-gray-900 shadow-sm">
+          Sign In
+        </div>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full max-w-md bg-white rounded-lg shadow p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-1">
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`${
+                  errors.email ? "border-red-500 focus-visible:ring-red-500" : ""
+                }`}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              )}
+            </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-sm font-medium">
-                      Password
-                    </Label>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={`${
-                        errors.password ? "border-red-500 focus-visible:ring-red-500" : ""
-                      }`}
-                      placeholder="••••••••"
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" aria-hidden="true" />
-                      ) : (
-                        <Eye className="w-4 h-4" aria-hidden="true" />
-                      )}
-                    </button>
-                    {errors.password && (
-                      <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-                    )}
-                  </div>
-                </div>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${
+                    errors.password ? "border-red-500 focus-visible:ring-red-500" : ""
+                  }`}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-4 h-4" aria-hidden="true" />
+                  )}
+                </button>
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                )}
+              </div>
+            </div>
 
-                <div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-red-600 hover:bg-red-700 text-white"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Signing in..." : "Sign in"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-2">
-              <div className="text-sm text-center">
-                <Link to="/signup" className="font-medium text-indigo-900 hover:underline">
-                  Don't have an account yet? Sign up
-                </Link>
-              </div>
-              <div className="text-sm text-center">
-                <Link to="/forgot-password" className="font-medium text-indigo-900 hover:underline">
-                  Forgot your password?
-                </Link>
-              </div>
-            </CardFooter>
-          </Card>
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-sm font-medium text-indigo-900 hover:underline">
+                Forgot your password?
+              </Link>
+            </div>
+
+            <div>
+              <Button
+                type="submit"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

@@ -52,6 +52,7 @@ const AppRoutes = () => {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/login" element={<SignIn />} /> {/* Alias for signin */}
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<NotFound />} /> {/* Placeholder for forgot password page */}
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
