@@ -11,6 +11,8 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import CreateAccount from "./pages/CreateAccount";
 import CookiePolicy from "./pages/CookiePolicy";
 import CookieConsent from "./components/CookieConsent";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 
 // This component handles scrolling to sections when navigating from other pages
 const ScrollToSection = () => {
@@ -47,6 +49,9 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/create-account" element={<CreateAccount />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/login" element={<SignIn />} /> {/* Alias for signin */}
+        <Route path="/signup" element={<SignUp />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
