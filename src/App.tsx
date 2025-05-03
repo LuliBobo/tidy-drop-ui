@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import CreateAccount from "./pages/CreateAccount";
+import CookieConsent from "./components/CookieConsent";
 
 // This component handles scrolling to sections when navigating from other pages
 const ScrollToSection = () => {
@@ -60,6 +61,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppRoutes />
+        <CookieConsent />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
