@@ -3,22 +3,21 @@
     "composite": true,
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "ESNext",
+    "module": "ES2022",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "emitDeclarationOnly": true,
-
-    /* Linting */
+    "outDir": "dist",
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "src/main/**/*", "src/preload/**/*", "src/backend/**/*"],
+  "exclude": ["node_modules"]
 }

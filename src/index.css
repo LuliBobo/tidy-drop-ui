@@ -100,6 +100,40 @@
   }
 }
 
+/* Fix Chrome autofill styles */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: hsl(var(--foreground));
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px hsl(var(--background));
+}
+
+/* Enhanced Splitting.js animation styles */
+.splitting .char {
+  opacity: 0;
+  transform: translateY(30px);
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+.splitting .char[data-animated="true"] {
+  animation: textReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes textReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .theme-toggle {
   display: inline-flex;
   align-items: center;

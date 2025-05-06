@@ -1,22 +1,51 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
+import electron from 'vite-plugin-electron';
+import renderer from 'vite-plugin-electron-renderer';
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
+export default defineConfig({
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
+    electron([
+      {
+        entry: 'src/main/main.ts',
+        vite: {
+          build: {
+            outDir: 'dist',
+            sourcemap: true,
+          },
+        },
+      },
+      {
+        entry: 'src/preload/preload.ts',
+        onstart(options) {
+          options.reload();
+        },
+        vite: {
+          build: {
+            outDir: 'preload',
+            emptyOutDir: true,
+            rollupOptions: {
+              output: {
+                entryFileNames: 'preload.js'
+              }
+            }
+          }
+        }
+      },
+    ]),
+    renderer(),
+  ],
+  base: './',
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
+      'punycode': 'punycode/', // Add punycode polyfill
     },
   },
-}));
+  build: {
+    outDir: 'dist/renderer',
+    emptyOutDir: true,
+  },
+});

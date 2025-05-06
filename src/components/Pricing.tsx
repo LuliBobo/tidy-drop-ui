@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check } from 'lucide-react';
@@ -6,6 +5,21 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+
+// Add the Stripe checkout URLs
+const STRIPE_URLS = {
+  proPlan: {
+    monthly: 'https://buy.stripe.com/test_abc123', // Replace with your monthly Pro plan URL
+    yearly: 'https://buy.stripe.com/test_xyz456'   // Replace with your yearly Pro plan URL
+  }
+};
+
+const openStripeCheckout = (plan: string, isYearly: boolean) => {
+  if (plan === 'Pro') {
+    const checkoutUrl = isYearly ? STRIPE_URLS.proPlan.yearly : STRIPE_URLS.proPlan.monthly;
+    window.open(checkoutUrl, '_blank');
+  }
+};
 
 type PricingPlan = {
   name: string;
@@ -36,6 +50,12 @@ const PricingCard = ({
     : isYearly 
       ? '/year' 
       : '/month';
+
+  const handlePlanClick = () => {
+    if (plan.name === 'Pro') {
+      openStripeCheckout('Pro', isYearly);
+    }
+  };
 
   return (
     <Card className={`rounded-xl p-6 ${
@@ -80,6 +100,7 @@ const PricingCard = ({
             ? 'bg-droptidy-purple hover:bg-droptidy-purple-dark' 
             : 'bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600'
         }`}
+        onClick={handlePlanClick}
       >
         {plan.buttonText}
       </Button>

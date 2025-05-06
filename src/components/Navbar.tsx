@@ -1,6 +1,5 @@
-
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -10,15 +9,18 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Menu, MessageCircle } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
+import { useLicense } from '@/lib/license-context';
+import FeedbackForm from './FeedbackForm';
 
 const THEME_KEY = "theme";
 
 function getPreferredTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
   const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || stored === "dark") return stored;
+  if (stored === "light" || "dark") return stored;
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   return mq.matches ? "dark" : "light";
 }
@@ -26,18 +28,27 @@ function getPreferredTheme(): "light" | "dark" {
 interface NavLink {
   label: string;
   href: string;
+  sectionId: string;
 }
 
+// Updated navLinks with sectionId for intersection observer
 const navLinks: NavLink[] = [
-  { label: 'Home', href: '#hero' },
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'Security', href: '#security' },
+  { label: 'Home', href: '#hero', sectionId: 'hero' },
+  { label: 'Features', href: '#features', sectionId: 'features' },
+  { label: 'Pricing', href: '#pricing', sectionId: 'pricing' },
+  { label: 'Security', href: '#security', sectionId: 'security' },
 ];
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { license } = useLicense();
+  const isPrivacyPage = location.pathname === '/privacy';
+  const isCookiePolicyPage = location.pathname === '/cookie-policy';
+  const isTermsOfServicePage = location.pathname === '/terms-of-service';
+  const [activeSection, setActiveSection] = useState<string>('hero');
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
@@ -57,40 +68,107 @@ const Navbar = () => {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  // Set up intersection observer for sections
+  useEffect(() => {
+    // Don't set up observers on non-index pages
+    if (location.pathname !== '/') return;
+
+    // Disconnect previous observer if it exists
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new intersection observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // Filter for elements that are currently intersecting
+        const intersectingEntries = entries.filter(entry => entry.isIntersecting);
+        
+        // If we have intersecting entries, use the one with the highest ratio
+        if (intersectingEntries.length > 0) {
+          // Sort by intersection ratio (highest first)
+          const sortedEntries = [...intersectingEntries].sort(
+            (a, b) => b.intersectionRatio - a.intersectionRatio
+          );
+          
+          // Get the ID of the most visible section
+          const mostVisibleId = sortedEntries[0].target.id;
+          setActiveSection(mostVisibleId);
+        }
+      },
+      {
+        // Root is the viewport
+        root: null,
+        // Start detecting when element is 10% visible
+        threshold: [0.1, 0.5],
+        // Consider the whole viewport plus some margin
+        rootMargin: '-80px 0px -20% 0px' 
+      }
+    );
+
+    // Observe all sections
+    navLinks.forEach(link => {
+      const section = document.getElementById(link.sectionId);
+      if (section) {
+        observerRef.current?.observe(section);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [location.pathname]);
+
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
-      setIsMenuOpen(false);
+  const handleNavigation = (href: string, sectionId: string) => {
+    if (isPrivacyPage || isCookiePolicyPage || isTermsOfServicePage) {
+      // If on privacy or cookie policy or terms of service page, navigate to main page first
+      navigate('/' + href);
+    } else {
+      // On main page, scroll to section
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-background z-50 shadow">
+    <nav className="fixed top-0 left-0 w-full bg-background/95 backdrop-blur-sm z-50 shadow">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <DropTidyLogo size={36} />
-          <span className="text-xl font-bold text-indigo-600" aria-label="DropTidy" style={{letterSpacing: "0.04em"}}>
+          <span className="text-xl font-bold text-indigo-600 logo-text" aria-label="DropTidy">
             DropTidy
           </span>
-        </div>
+        </Link>
         <div className="hidden md:flex items-center space-x-4">
           {navLinks.map((link) => (
-            <button key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="text-gray-700 hover:text-indigo-500 transition-colors">
+            <button 
+              key={link.href} 
+              onClick={() => handleNavigation(link.href, link.sectionId)} 
+              className={`text-sm font-medium px-3 py-2 rounded-md transition-colors ${
+                activeSection === link.sectionId
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
+                  : 'text-gray-700 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400'
+              }`}
+              aria-current={activeSection === link.sectionId ? "page" : undefined}
+            >
               {link.label}
             </button>
           ))}
+          <Badge variant={license === 'pro' ? "default" : "secondary"} className="mr-2">
+            {license === 'pro' ? '✨ Pro' : 'Free'}
+          </Badge>
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
+          <FeedbackForm />
           <button
             className="theme-toggle"
             onClick={toggleTheme}
@@ -133,19 +211,41 @@ const Navbar = () => {
           <SheetContent side="left" className="sm:w-64">
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
-              <SheetDescription>
+              <SheetDescription className="flex items-center gap-2">
                 Navigate through DropTidy
+                <Badge variant={license === 'pro' ? "default" : "secondary"}>
+                  {license === 'pro' ? '✨ Pro' : 'Free'}
+                </Badge>
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
               {navLinks.map((link) => (
-                <Button variant="ghost" key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="justify-start">
+                <Button 
+                  variant={activeSection === link.sectionId ? "secondary" : "ghost"}
+                  key={link.href} 
+                  onClick={() => handleNavigation(link.href, link.sectionId)} 
+                  className="justify-start"
+                >
                   {link.label}
                 </Button>
               ))}
               <Link to="/privacy">
                 <Button variant="outline" className="justify-start">Privacy Policy</Button>
               </Link>
+              <Link to="/cookie-policy">
+                <Button variant="outline" className="justify-start">Cookie Policy</Button>
+              </Link>
+              <Link to="/terms-of-service">
+                <Button variant="outline" className="justify-start">Terms of Service</Button>
+              </Link>
+              <FeedbackForm 
+                trigger={
+                  <Button variant="outline" className="justify-start gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Send Feedback
+                  </Button>
+                }
+              />
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}

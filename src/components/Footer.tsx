@@ -1,18 +1,76 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import DropTidyLogo from "./DropTidyLogo";
 
 const Footer = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isHomePage = location.pathname === '/';
+
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
+    // If we're already on the homepage, just scroll to the section
+    if (isHomePage) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
+    } else {
+      // If we're on another page, navigate to home and then scroll
+      navigate(`/?section=${id}`);
     }
   };
+
+  const handleCookiePolicy = () => {
+    if (isHomePage) {
+      // If we're on the homepage, check if cookie-policy section exists
+      const cookiePolicySection = document.getElementById('cookie-policy');
+      if (cookiePolicySection) {
+        cookiePolicySection.scrollIntoView({
+          behavior: 'smooth'
+        });
+      } else {
+        // If there's no section on the page, navigate to the separate page
+        navigate('/cookie-policy');
+      }
+    } else {
+      // If we're not on the homepage, check if we're on the cookie policy page
+      if (location.pathname === '/cookie-policy') {
+        // Already on the cookie policy page, do nothing
+        return;
+      }
+      // Otherwise navigate to cookie policy page
+      navigate('/cookie-policy');
+    }
+  };
+
+  const handleTermsOfService = () => {
+    if (isHomePage) {
+      // If we're on the homepage, check if terms-of-service section exists
+      const termsOfServiceSection = document.getElementById('terms-of-service');
+      if (termsOfServiceSection) {
+        termsOfServiceSection.scrollIntoView({
+          behavior: 'smooth'
+        });
+      } else {
+        // If there's no section on the page, navigate to the separate page
+        navigate('/terms-of-service');
+      }
+    } else {
+      // If we're not on the homepage, check if we're on the terms of service page
+      if (location.pathname === '/terms-of-service') {
+        // Already on the terms of service page, do nothing
+        return;
+      }
+      // Otherwise navigate to terms of service page
+      navigate('/terms-of-service');
+    }
+  };
+
   const year = new Date().getFullYear();
-  return <footer className="bg-gray-900 py-12 text-white">
+  
+  return (
+    <footer className="bg-gray-900 py-12 text-white">
       <div className="container mx-auto px-4">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
@@ -86,14 +144,20 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <button 
+                  onClick={handleTermsOfService}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   Terms of Service
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <button 
+                  onClick={handleCookiePolicy}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
                   Cookie Policy
-                </a>
+                </button>
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
@@ -104,6 +168,8 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
+
 export default Footer;

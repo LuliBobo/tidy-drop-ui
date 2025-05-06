@@ -1,238 +1,200 @@
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Upload, FileImage, FileVideo } from 'lucide-react';
-import { formatFileSize } from '@/lib/utils';
+import React, { useCallback, useState, useEffect } from 'react';
+import { useDropzone, FileRejection } from 'react-dropzone';
+import { FileVideo, AlertCircle, X } from 'lucide-react';
+import { FileStatusIndicator } from './ui/file-status-indicator';
+import { getRemainingQuota, checkDailyQuotaExceeded, getCurrentLicense } from '@/lib/utils';
+import { LICENSE_FEATURES } from '@/lib/types';
 
-const ACCEPTED_FILE_TYPES = {
-  'image/jpeg': ['.jpg', '.jpeg'],
-  'image/png': ['.png'],
-  'video/mp4': ['.mp4'],
-  'video/quicktime': ['.mov'],
-};
+// Define possible states for file processing
+export type CleanStatus = 'idle' | 'cleaning' | 'success' | 'error';
 
-const handleCleanImage = async (path: string) => {
-  const result = await window.electron.ipcRenderer.invoke('clean-image', path);
-  alert(result ? 'Image cleaned!' : 'Error cleaning image');
-};
-
-const handleCleanVideo = async (input: string, output: string) => {
-  const result = await window.electron.ipcRenderer.invoke('clean-video', input, output);
-  alert(result ? 'Video cleaned!' : 'Error cleaning video');
-};
-
-type CleanStatus = 'idle' | 'cleaning' | 'success' | 'error';
-
-interface FileWithStatus {
+// Type definitions for file metadata and status
+interface FileItem {
+  file: File;
   path: string;
-  size: number;
   status: CleanStatus;
+  outputPath?: string;
+  error?: string;
 }
 
+// Component props interface with detailed options
 interface DropzoneProps {
-  onFilesAdded?: (files: File[]) => void;
+  onFilesAdded?: (files: FileItem[]) => void;
   maxFiles?: number;
+  maxSize?: number;
+  acceptedFileTypes?: string[];
 }
 
-const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, maxFiles = 10 }) => {
-  const [files, setFiles] = useState<FileWithStatus[]>([]);
+export const Dropzone: React.FC<DropzoneProps> = ({
+  onFilesAdded,
+  maxFiles = 10,
+  maxSize = 100 * 1024 * 1024, // 100MB default
+  acceptedFileTypes = ['image/*', 'video/*']
+}) => {
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [remainingFiles, setRemainingFiles] = useState(getRemainingQuota());
+  const currentLicense = getCurrentLicense();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const fileObjs = acceptedFiles.map(file => ({
-      file, // Store the original File object
-      path: (file as any).path || file.name,
-      size: file.size,
-      status: 'idle' as CleanStatus,
+  // Cleanup function to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      files.forEach(file => {
+        if (file.file.type.startsWith('image/')) {
+          URL.revokeObjectURL(file.path);
+        }
+      });
+    };
+  }, [files]);
+
+  // Handle file drop with validation
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+    if (rejectedFiles.length > 0) {
+      const errors = rejectedFiles.map(f => f.errors.map(e => e.message)).flat();
+      setError(`Invalid files: ${errors.join(', ')}`);
+      return;
+    }
+
+    // Check if user exceeded daily quota
+    if (checkDailyQuotaExceeded()) {
+      setError(`Daily limit of ${LICENSE_FEATURES[currentLicense].maxFilesPerDay} files reached. Upgrade to Pro for unlimited files.`);
+      return;
+    }
+
+    // Filter out video files for free users
+    const filteredFiles = acceptedFiles.filter(file => {
+      if (file.type.startsWith('video/') && !LICENSE_FEATURES[currentLicense].allowVideoProcessing) {
+        setError('Video processing is only available in Pro plan');
+        return false;
+      }
+      return true;
+    });
+
+    if (filteredFiles.length === 0) return;
+
+    const remainingQuota = getRemainingQuota();
+    const allowedCount = Math.min(remainingQuota, filteredFiles.length);
+    
+    if (allowedCount < filteredFiles.length) {
+      setError(`Only ${allowedCount} files can be processed with your remaining quota`);
+    }
+
+    const newFiles = filteredFiles.slice(0, allowedCount).map(file => ({
+      file,
+      path: URL.createObjectURL(file),
+      status: 'idle' as CleanStatus
     }));
-    setFiles(fileObjs);
-    onFilesAdded?.(acceptedFiles);
+    
+    setFiles(prev => {
+      const updatedFiles = [...prev, ...newFiles];
+      onFilesAdded?.(updatedFiles);
+      return updatedFiles;
+    });
+
+    setRemainingFiles(getRemainingQuota() - allowedCount);
+  }, [onFilesAdded, currentLicense]);
+
+  // Remove file handler with keyboard support
+  const removeFile = useCallback((index: number) => {
+    setFiles(prev => {
+      const updatedFiles = prev.filter((_, i) => i !== index);
+      onFilesAdded?.(updatedFiles);
+      return updatedFiles;
+    });
   }, [onFilesAdded]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  // Configure dropzone with validation options
+  const { getRootProps, getInputProps, isDragActive, isFocused } = useDropzone({
     onDrop,
-    accept: ACCEPTED_FILE_TYPES,
     maxFiles,
+    maxSize,
+    accept: acceptedFileTypes.reduce((acc, curr) => ({ ...acc, [curr]: [] }), {}),
+    noKeyboard: false,
   });
 
-  const handleClean = async (filePath: string, idx: number) => {
-    setFiles(prev =>
-      prev.map((f, i) =>
-        i === idx ? { ...f, status: 'cleaning' } : f
-      )
-    );
-    try {
-      const result = await window.electron.ipcRenderer.invoke('clean-image', filePath);
-      setFiles(prev =>
-        prev.map((f, i) =>
-          i === idx
-            ? { ...f, status: result ? 'success' : 'error' }
-            : f
-        )
-      );
-    } catch {
-      setFiles(prev =>
-        prev.map((f, i) =>
-          i === idx ? { ...f, status: 'error' } : f
-        )
-      );
-    }
-  };
-
-  const totalSize = files.reduce((acc, file) => acc + file.size, 0);
-
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
+    <div className="w-full max-w-2xl mx-auto p-4" role="region" aria-label="File upload area">
+      {/* Accessible dropzone area */}
       <div
         {...getRootProps()}
-        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200 ease-in-out cursor-pointer
-          ${isDragActive 
-            ? 'border-droptidy-purple bg-droptidy-purple/5' 
-            : 'border-gray-300 hover:border-droptidy-purple bg-gray-50/50 hover:bg-droptidy-purple/5'
-          }`}
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+          ${isFocused ? 'ring-2 ring-blue-400 ring-offset-2' : ''}
+        `}
       >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-4">
-          <Upload 
-            className={`w-12 h-12 ${
-              isDragActive ? 'text-droptidy-purple' : 'text-gray-400'
-            }`}
-          />
-          <div className="space-y-1">
-            <p className="text-lg font-medium">
-              {isDragActive 
-                ? 'Drop your files here...' 
-                : 'Drag & Drop your files here'}
-            </p>
-            <p className="text-sm text-gray-500">
-              or click to select files
-            </p>
-          </div>
-        </div>
+        <input {...getInputProps()} aria-label="File input" />
+        <p className="text-gray-600">
+          {isDragActive ? "Drop files here..." : "Drag 'n' drop files here, or click to select"}
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          {currentLicense === 'free' ? 
+            `${remainingFiles} files remaining today (max ${LICENSE_FEATURES.free.maxFilesPerDay} per day)` : 
+            'Unlimited files available'}
+        </p>
       </div>
 
-      {files.length > 0 && (
-        <div className="mt-6 space-y-4">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>{files.length} file(s) selected</span>
-            <span>Total size: {formatFileSize(totalSize)}</span>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {files.map((file, index) => (
-              <div
-                key={`${file.path}-${index}`}
-                className="relative group rounded-lg border bg-white p-2 shadow-sm"
-              >
-                {file.path.startsWith('image/') ? (
-                  <div className="aspect-square w-full rounded-md overflow-hidden">
-                      src={URL.createObjectURL(file.file)}
-                      src={URL.createObjectURL(file)}
-                      alt={file.path}
-                      className="h-full w-full object-cover"
-                      onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file.file))}
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center">
-                    <FileVideo className="h-8 w-8 text-gray-400" />
-                  </div>
-                )}
-                <div className="mt-2 text-xs truncate">{file.path}</div>
-                <div className="text-xs text-gray-500">
-                  {formatFileSize(file.size)}
-                </div>
-                <div className="flex items-center gap-2">
-                  {file.status === 'idle' && (
-                    <button onClick={() => handleClean(file.path, index)} className="ml-2 px-2 py-1 bg-blue-500 text-white rounded">
-                      Vyčistiť
-                    </button>
-                  )}
-                  {file.status === 'cleaning' && <span>🟡 Cleaning…</span>}
-                  {file.status === 'success' && <span>✅ Cleaned successfully</span>}
-                  {file.status === 'error' && <span>❌ Failed to clean</span>}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Error message display */}
+      {error && (
+        <div 
+          className="mt-4 p-3 bg-red-50 text-red-700 rounded-md flex items-center gap-2"
+          role="alert"
+        >
+          <AlertCircle className="h-5 w-5" aria-hidden="true" />
+          <span>{error}</span>
         </div>
       )}
-    </div>
-  );
-};
 
-  return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      <div
-        {...getRootProps()}
-        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200 ease-in-out cursor-pointer
-          ${isDragActive 
-            ? 'border-droptidy-purple bg-droptidy-purple/5' 
-            : 'border-gray-300 hover:border-droptidy-purple bg-gray-50/50 hover:bg-droptidy-purple/5'
-          }`}
-      >
-        <input {...getInputProps()} />
-        <div className="flex flex-col items-center gap-4">
-          <Upload 
-            className={`w-12 h-12 ${
-              isDragActive ? 'text-droptidy-purple' : 'text-gray-400'
-            }`}
-          />
-          <div className="space-y-1">
-            <p className="text-lg font-medium">
-              {isDragActive 
-                ? 'Drop your files here...' 
-                : 'Drag & Drop your files here'}
-            </p>
-            <p className="text-sm text-gray-500">
-              or click to select files
-            </p>
-          </div>
-        </div>
-      </div>
-
+      {/* File list */}
       {files.length > 0 && (
-        <div className="mt-6 space-y-4">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <span>{files.length} file(s) selected</span>
-            <span>Total size: {formatFileSize(totalSize)}</span>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {files.map((file, index) => (
-              <div
-                key={`${file.path}-${index}`}
-                className="relative group rounded-lg border bg-white p-2 shadow-sm"
+        <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4" role="list" aria-label="Uploaded files">
+          {files.map((file, index) => (
+            <div
+              key={`${file.path}-${index}`}
+              className="relative group rounded-lg border bg-white p-2 shadow-sm"
+              role="listitem"
+            >
+              {/* Remove file button */}
+              <button
+                onClick={() => removeFile(index)}
+                onKeyPress={(e) => e.key === 'Enter' && removeFile(index)}
+                className="absolute -right-2 -top-2 z-10 p-1 bg-white rounded-full shadow-md 
+                  opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
+                aria-label={`Remove ${file.file.name}`}
               >
-                {file.path.startsWith('image/') ? (
-                  <div className="aspect-square w-full rounded-md overflow-hidden">
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={file.path}
-                      className="h-full w-full object-cover"
-                      onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file))}
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center">
-                    <FileVideo className="h-8 w-8 text-gray-400" />
-                  </div>
-                )}
-                <div className="mt-2 text-xs truncate">{file.path}</div>
-                <div className="text-xs text-gray-500">
-                  {formatFileSize(file.size)}
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+
+              {/* File preview with fallback */}
+              {file.file.type.startsWith('image/') ? (
+                <div className="aspect-square w-full rounded-md overflow-hidden">
+                  <img
+                    src={file.path}
+                    alt={`Preview of ${file.file.name}`}
+                    className="h-full w-full object-cover"
+                    onLoad={(e) => {
+                      URL.revokeObjectURL((e.target as HTMLImageElement).src);
+                    }}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  {file.status === 'idle' && (
-                    <button onClick={() => handleClean(file.path, index)} className="ml-2 px-2 py-1 bg-blue-500 text-white rounded">
-                      Vyčistiť
-                    </button>
-                  )}
-                  {file.status === 'cleaning' && <span>🟡 Cleaning…</span>}
-                  {file.status === 'success' && <span>✅ Cleaned successfully</span>}
-                  {file.status === 'error' && <span>❌ Failed to clean</span>}
+              ) : (
+                <div className="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center">
+                  <FileVideo className="h-8 w-8 text-gray-400" aria-hidden="true" />
                 </div>
+              )}
+
+              {/* File information */}
+              <div className="mt-2 space-y-1">
+                <p className="text-sm font-medium text-gray-700 truncate" title={file.file.name}>
+                  {file.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {(file.file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <FileStatusIndicator status={file.status} error={file.error} />
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

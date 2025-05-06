@@ -40,3 +40,15 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Text animation styles */
+.animate__fadeInUp {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+/* Ensure proper letter spacing */
+h1 span span {
+  margin-right: -0.05em; /* Adjust letter spacing for animated characters */
+}

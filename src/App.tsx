@@ -7,7 +7,8 @@ import { useState } from 'react';
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./components/PrivacyPolicy";
-import CookiePolicy from "./components/CookiePolicy";
+import CookiePolicyPage from "./pages/CookiePolicy";
+import TermsOfServicePage from "./pages/terms-of-service";
 import SignUp from "./pages/SignUp";
 import { LicenseContext, LicenseLevel } from "@/lib/license-context";
 import { CookieConsent } from "./components/ui/cookie-consent"
@@ -27,7 +28,8 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
               <Route path="/signup" element={<SignUp />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

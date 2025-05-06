@@ -1,11 +1,53 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
+import { Upload, FileVideo, FileImage, Lock } from 'lucide-react';
+import 'animate.css';
 
 const Hero = () => {
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const firstHeadlineRef = useRef<HTMLSpanElement>(null);
+  const secondHeadlineRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    // Split and animate first headline
+    if (firstHeadlineRef.current) {
+      const text = firstHeadlineRef.current.textContent || '';
+      firstHeadlineRef.current.innerHTML = '';
+      Array.from(text).forEach((char, i) => {
+        const span = document.createElement('span');
+        span.textContent = char === ' ' ? '\u00A0' : char; // Use non-breaking space for spaces
+        span.className = 'animate__animated animate__fadeInUp opacity-0';
+        span.style.animationDelay = `${i * 0.05}s`;
+        span.style.display = 'inline-block';
+        firstHeadlineRef.current?.appendChild(span);
+      });
+    }
+
+    // Split and animate second headline with additional delay
+    if (secondHeadlineRef.current) {
+      const text = secondHeadlineRef.current.textContent || '';
+      secondHeadlineRef.current.innerHTML = '';
+      Array.from(text).forEach((char, i) => {
+        const span = document.createElement('span');
+        span.textContent = char === ' ' ? '\u00A0' : char;
+        span.className = 'animate__animated animate__fadeInUp opacity-0';
+        span.style.animationDelay = `${1 + (i * 0.05)}s`; // Start 1 second after first headline
+        span.style.display = 'inline-block';
+        secondHeadlineRef.current?.appendChild(span);
+      });
+    }
+
+    // Trigger animations
+    const spans = document.querySelectorAll('.animate__fadeInUp');
+    spans.forEach(span => {
+      span.addEventListener('animationstart', () => {
+        (span as HTMLElement).style.opacity = '1';
+      });
+    });
+  }, []);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -55,18 +97,22 @@ const Hero = () => {
             <span className="text-sm font-medium text-droptidy-purple">Privacy-First Technology</span>
           </div>
           <h1 className="mb-6 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
-            Protect Your Privacy. <br />
-            <span className="bg-gradient-to-r from-[#A78BFA] to-[#6366F1] bg-clip-text text-transparent">
-              Clean Your Photos in One Click.
+            <span ref={firstHeadlineRef} className="block text-foreground mb-2">
+              Protect Your Privacy.
+            </span>
+            <span className="block text-[#8465ff]">
+              Clean up your photos with one click.
             </span>
           </h1>
           <p className="mb-8 text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             DropTidy removes hidden metadata from your media files. Just drag, clean, and download.
           </p>
           <div className="flex flex-wrap gap-4 justify-center mb-12">
-            <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white" size="lg">
-              Get Started Free
-            </Button>
+            <Link to="/signup">
+              <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white" size="lg">
+                Get Started Free
+              </Button>
+            </Link>
             <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10" size="lg" onClick={() => scrollToSection('features')}>
               See Features
             </Button>
@@ -87,7 +133,16 @@ const Hero = () => {
                     Drag & Drop Photos/Videos or <span className="text-droptidy-purple font-semibold">Browse</span>
                   </p>
                 </div>
-                <input type="file" multiple accept="image/*,video/*" ref={inputRef} onChange={handleChange} className="hidden" />
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*,video/*" 
+                  ref={inputRef} 
+                  onChange={handleChange} 
+                  className="hidden"
+                  title="File upload"
+                  aria-label="Upload photos or videos"
+                />
                 {files.length > 0 && <div className="mt-6">
                   <p className="text-sm font-medium mb-2 text-center">Uploaded Files:</p>
                   <ul className="space-y-2 max-w-md mx-auto">
@@ -97,6 +152,14 @@ const Hero = () => {
                     </li>)}
                   </ul>
                 </div>}
+                
+                {/* Privacy guarantee message */}
+                <div className="mt-6 flex items-center justify-center text-sm">
+                  <div className="inline-flex items-center p-2 px-3 bg-green-50 text-green-800 rounded-full dark:bg-green-900/30 dark:text-green-300">
+                    <Lock className="h-4 w-4 mr-2" />
+                    🔒 100% Local Processing — Your files never leave your device.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
