@@ -1,73 +1,150 @@
-# Welcome to your Lovable project
+# tidy-drop-ui 🚀
 
-## Project info
+A modern, responsive interface built with Vite, React, TypeScript, and Tailwind CSS. Designed for seamless file management, metadata removal, and AI-powered enhancements.
 
-**URL**: https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16
+![TidyDrop UI Banner](public/tidy-drop-banner.png)
 
-## How can I edit this code?
+## 🌟 Features
 
-There are several ways of editing your application.
+- ⚡ **Vite** – ultra-fast development
+- 🎨 **Tailwind CSS** & **shadcn/ui** for beautiful UI
+- 🛡 **Metadata Removal** from photos and videos
+- 🤖 **AI-Powered** anonymization tools
+- 🗂 **Smart File Organization**
+- 📱 **Fully Responsive** design
+- 🌙 **Dark Mode** support
+- 🔍 **Type Safe** with TypeScript
+- 🖥️ **Electron Integration** (planned)
 
-**Use Lovable**
+## 📸 Screenshots
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16) and start prompting.
+| Home Page | Upload and Clean Files |
+|:---------:|:----------------------:|
+| ![Home Page](public/screenshots/homepage.png) | ![Upload and Clean Files](public/screenshots/upload-clean.png) |
 
-Changes made via Lovable will be committed automatically to this repo.
+| File Organization | Dark Mode |
+|:-----------------:|:---------:|
+| ![File Organization](public/screenshots/organize-files.png) | ![Dark Mode](public/screenshots/dark-mode.png) |
 
-**Use your preferred IDE**
+> *Note: Screenshots are stored in `public/screenshots/`. Replace placeholder images with real app screenshots.*
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+Make sure you have:
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [Git](https://git-scm.com/)
+- [npm](https://www.npmjs.com/)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Installation Guide
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. **Clone the Repository**
+   ```bash
+   git clone <YOUR_GIT_URL>
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. **Navigate to the Project Directory**
+   ```bash
+   cd tidy-drop-ui
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+3. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Start the Development Server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Visit Your App**
+   Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## 🔧 Build and Deployment
+
+1. **Create a Production Build**
+   ```bash
+   npm run build
+   ```
+
+2. **Deploy** the contents of the `/dist` folder to any static hosting platform (e.g., Vercel, Netlify, Render).
+
+## 📚 Project Structure
+
+```
+tidy-drop-ui/
+├── public/              # Static assets (screenshots, banners)
+├── src/
+│   ├── components/      # Reusable React components
+│   ├── pages/           # App pages and views
+│   ├── lib/             # Utilities and helpers
+│   ├── hooks/           # Custom React hooks
+│   ├── context/         # Global app contexts
+│   └── styles/          # Global and component-specific styles
+├── package.json         # Project metadata and scripts
+└── ...config files
 ```
 
-**Edit a file directly in GitHub**
+## 🛠️ Development Tools
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Code Quality**
+  - ESLint for linting
+  - Prettier for formatting
+- **Version Control**
+  - Git & GitHub
+- **Type Checking**
+  - TypeScript
 
-**Use GitHub Codespaces**
+## 🔮 Planned Features
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- 📦 Bulk metadata removal for entire folders
+- 🖼️ AI-based face detection and anonymization (auto blur faces)
+- ✍️ Manual face selection and blur adjustment
+- 🗂️ Smart file categorization using AI
+- ☁️ Optional cloud sync and backup
+- 💬 Multilingual support (EN / SK)
+- 🔒 Advanced security settings and privacy modes
 
-## What technologies are used for this project?
+## 🛤 Roadmap
 
-This project is built with:
+| Milestone | Status | Target Date |
+|:----------|:-------|:------------|
+| Basic Metadata Removal Tool | ✅ Completed | April 2025 |
+| UI/UX Polish & Dark Mode | ✅ Completed | April 2025 |
+| AI Face Blurring | 🚧 In Progress | May 2025 |
+| Bulk Folder Processing | 📝 Planned | May 2025 |
+| Desktop App (Electron) | 📝 Planned | June 2025 |
+| Smart Auto-Sorting | 📝 Planned | June 2025 |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+> *Roadmap is tentative and may change as the project evolves.*
 
-## How can I deploy this project?
+## 🤝 Contributing
 
-Simply open [Lovable](https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16) and click on Share -> Publish.
+We welcome contributions to make TidyDrop UI even better!
 
-## Can I connect a custom domain to my Lovable project?
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to your branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Yes, you can!
+## 📝 License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🙏 Acknowledgments
+
+- [Vite](https://vitejs.dev/)
+- [React](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+
+## 💬 Support
+
+If you have any questions, feel free to open an issue on GitHub.
+
+---
+
+Built with ❤️ by the TidyDrop Team.
