@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import UpgradeModal from './UpgradeModal';
 
 // Add the Stripe checkout URLs
 const STRIPE_URLS = {
@@ -34,10 +35,12 @@ type PricingPlan = {
 
 const PricingCard = ({ 
   plan, 
-  isYearly 
+  isYearly,
+  onUpgradeClick
 }: { 
   plan: PricingPlan; 
   isYearly: boolean;
+  onUpgradeClick?: (plan: string) => void;
 }) => {
   const price = plan.lifetime 
     ? plan.yearlyPrice 
@@ -52,7 +55,9 @@ const PricingCard = ({
       : '/month';
 
   const handlePlanClick = () => {
-    if (plan.name === 'Pro') {
+    if (plan.name === 'Pro' && onUpgradeClick) {
+      onUpgradeClick('Pro');
+    } else if (plan.name === 'Pro') {
       openStripeCheckout('Pro', isYearly);
     }
   };
@@ -110,6 +115,13 @@ const PricingCard = ({
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+
+  const handleUpgradeClick = (plan: string) => {
+    if (plan === 'Pro') {
+      setIsUpgradeModalOpen(true);
+    }
+  };
 
   const plans: PricingPlan[] = [
     {
@@ -173,42 +185,54 @@ const Pricing = () => {
   ];
 
   return (
-    <section id="pricing" className="py-20">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto mb-12 max-w-xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-            Choose the plan that works best for your privacy needs
-          </p>
-          
-          <div className="flex items-center justify-center gap-3">
-            <Label htmlFor="billing-toggle" className="text-sm font-medium">
-              Monthly
-            </Label>
-            <Switch
-              id="billing-toggle"
-              checked={isYearly}
-              onCheckedChange={setIsYearly}
-              className="data-[state=checked]:bg-droptidy-purple"
-            />
-            <div className="flex items-center gap-1.5">
+    <>
+      <section id="pricing" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto mb-12 max-w-xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+              Choose the plan that works best for your privacy needs
+            </p>
+            
+            <div className="flex items-center justify-center gap-3">
               <Label htmlFor="billing-toggle" className="text-sm font-medium">
-                Yearly
+                Monthly
               </Label>
-              <Badge variant="outline" className="text-xs bg-droptidy-purple/10 text-droptidy-purple border-droptidy-purple/20">
-                Save up to 16%
-              </Badge>
+              <Switch
+                id="billing-toggle"
+                checked={isYearly}
+                onCheckedChange={setIsYearly}
+                className="data-[state=checked]:bg-droptidy-purple"
+              />
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="billing-toggle" className="text-sm font-medium">
+                  Yearly
+                </Label>
+                <Badge variant="outline" className="text-xs bg-droptidy-purple/10 text-droptidy-purple border-droptidy-purple/20">
+                  Save up to 16%
+                </Badge>
+              </div>
             </div>
           </div>
+          
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {plans.map((plan, index) => (
+              <PricingCard 
+                key={index} 
+                plan={plan} 
+                isYearly={isYearly} 
+                onUpgradeClick={handleUpgradeClick}
+              />
+            ))}
+          </div>
         </div>
-        
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan, index) => (
-            <PricingCard key={index} plan={plan} isYearly={isYearly} />
-          ))}
-        </div>
-      </div>
-    </section>
+      </section>
+
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onOpenChange={setIsUpgradeModalOpen}
+      />
+    </>
   );
 };
 

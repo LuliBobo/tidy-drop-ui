@@ -12,6 +12,7 @@ import {
 import { FileStatusIndicator } from './ui/file-status-indicator';
 import { LICENSE_FEATURES } from '@/lib/types';
 import SettingsModal from './SettingsModal';
+import UpgradeModal from './UpgradeModal';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -68,6 +69,7 @@ export const FileCleaner: React.FC = () => {
   const [outputDir, setOutputDir] = useState('');
   const [autoOpenFolder, setAutoOpenFolder] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Load settings when component mounts
   useEffect(() => {
@@ -302,7 +304,7 @@ export const FileCleaner: React.FC = () => {
           <AlertDescription>
             You've reached your daily limit of {LICENSE_FEATURES.free.maxFilesPerDay} files. 
             <button 
-              onClick={() => window.location.href = '#pricing'} 
+              onClick={() => setIsUpgradeModalOpen(true)} 
               className="ml-2 text-red-700 underline hover:text-red-800"
             >
               Upgrade to Pro
@@ -318,7 +320,7 @@ export const FileCleaner: React.FC = () => {
           <AlertDescription>
             Video processing is only available in Pro plan. 
             <button 
-              onClick={() => window.location.href = '#pricing'} 
+              onClick={() => setIsUpgradeModalOpen(true)} 
               className="ml-2 text-blue-600 underline hover:text-blue-700"
             >
               Learn more
@@ -449,6 +451,12 @@ export const FileCleaner: React.FC = () => {
         setOutputDir={setOutputDir}
         autoOpenFolder={autoOpenFolder}
         setAutoOpenFolder={setAutoOpenFolder}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onOpenChange={setIsUpgradeModalOpen} 
       />
     </div>
   );
