@@ -14,6 +14,7 @@ import { Menu, MessageCircle } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
 import { useLicense } from '@/lib/license-context';
 import FeedbackForm from './FeedbackForm';
+import { isElectron, importElectron } from '@/lib/environment';
 
 const THEME_KEY = "theme";
 
@@ -29,8 +30,20 @@ type Theme = "light" | "dark";
 function getPreferredTheme(): Theme {
   // Handle SSR case
   if (typeof window === "undefined") return "light";
-  
+
   try {
+    // Check for web build first
+    if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+      // In web builds, always use localStorage or system preference
+      const storedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
+      if (storedTheme === "light" || storedTheme === "dark") {
+        return storedTheme;
+      }
+      
+      // Fall back to system preference
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    
     // Try to get theme from localStorage
     const stored = localStorage.getItem(THEME_KEY);
     
@@ -72,7 +85,29 @@ const Navbar = () => {
   const isCookiePolicyPage = location.pathname === '/cookie-policy';
   const isTermsOfServicePage = location.pathname === '/terms-of-service';
   const [activeSection, setActiveSection] = useState<string>('hero');
+  const [isElectronEnv, setIsElectronEnv] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Detect environment on mount
+  useEffect(() => {
+    // Check if we're in Electron
+    const detectEnvironment = async () => {
+      // First check for explicit web build flag (most reliable)
+      if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+        setIsElectronEnv(false);
+        return;
+      }
+      
+      // Otherwise use our utility
+      const electronEnv = isElectron();
+      setIsElectronEnv(electronEnv);
+      
+      // Log environment for debugging
+      console.log(`Running in ${electronEnv ? 'Electron' : 'Web'} environment`);
+    };
+    
+    detectEnvironment();
+  }, []);
 
   // Apply theme to document and save to localStorage
   useEffect(() => {
@@ -224,6 +259,31 @@ const Navbar = () => {
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
+          
+          {/* Show desktop-specific buttons only in Electron */}
+          {isElectronEnv && (
+            <Button 
+              variant="outline" 
+              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
+              onClick={() => window.electron?.app.openFolder('/')}
+            >
+              Open Files
+            </Button>
+          )}
+          
+          {/* Show "Try Desktop App" button only in web */}
+          {!isElectronEnv && (
+            <a 
+              href="https://droptidy.com/download" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100">
+                Download Desktop App
+              </Button>
+            </a>
+          )}
+          
           <FeedbackForm />
           <button
             className="theme-toggle"

@@ -71,10 +71,10 @@
   # esbuild is faster and more efficient than the default
   node_bundler = "esbuild"
   
-  # Function execution timeout in seconds
-  # Increase this if your functions need more processing time
-  # 10 seconds is usually sufficient for most operations
-  timeout = 10
+  # Function-specific configuration
+  [functions.feedback]
+    # Set timeout for the feedback function (in seconds)
+    timeout = 10
 
 # ------------------------------------------------------------------------------
 # HEADERS

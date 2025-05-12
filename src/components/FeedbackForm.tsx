@@ -100,7 +100,61 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const onSubmit = async (values: FeedbackFormValues) => {
     setIsSubmitting(true);
     try {
-      // Use our environment utility to safely invoke IPC or web fallback
+      // In web builds, always use the web implementation directly
+      // This prevents even trying to use Electron APIs during web builds
+      if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+        try {
+          console.log('Using web implementation for feedback submission');
+          // In a web environment, call our Netlify serverless function
+          const response = await fetch('/.netlify/functions/feedback', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...values,
+              source: 'web',
+              timestamp: new Date().toISOString()
+            })
+          });
+          
+          const data = await response.json() as WebApiFeedbackResponse;
+          
+          // Store the result for consistent handling below
+          const result = toFeedbackResponse(response, data);
+          
+          // Continue with the same response handling
+          if (result.success) {
+            console.log('Feedback submitted successfully in web environment', values.category);
+            
+            toast({
+              title: "Feedback sent",
+              description: "Thank you for your feedback!",
+              variant: "default"
+            });
+            
+            // Reset form and close dialog
+            form.reset({
+              name: '',
+              email: '',
+              message: '',
+              category: 'other'
+            });
+            
+            handleDialogClose();
+          } else {
+            throw new Error(result.error || "Failed to send feedback");
+          }
+          
+          return; // Exit early since we've handled everything
+        } catch (fetchError) {
+          // Handle network errors and format them consistently
+          console.error('Feedback submission network error:', fetchError);
+          throw fetchError; // Will be caught by the outer try/catch
+        }
+      }
+      
+      // For Electron or when not explicitly in web build, use our environment utility with fallback
       const result = await safeIpcInvoke<FeedbackResponse>(
         'send-feedback',
         [values],

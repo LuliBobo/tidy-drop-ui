@@ -73,10 +73,11 @@ export type IpcEventHandler<T = any> = (event: IpcRendererEvent, ...args: T[]) =
  * Safely check if the application is running in an Electron environment
  * 
  * This checks multiple properties to determine if we're in Electron:
- * 1. Presence of window.process and userAgent containing 'Electron'
- * 2. Existence of the electron bridge in window.electron
- * 3. Checking navigator.userAgent for Electron
- * 4. Checking for process.versions.electron in Node.js environment
+ * 1. First checks for VITE_IS_WEB_BUILD environment variable (highest priority)
+ * 2. Presence of window.process and userAgent containing 'Electron'
+ * 3. Existence of the electron bridge in window.electron
+ * 4. Checking navigator.userAgent for Electron
+ * 5. Checking for process.versions.electron in Node.js environment
  * 
  * The function handles SSR scenarios where window might not be available
  * and prevents false positives from browser extensions.
@@ -84,6 +85,12 @@ export type IpcEventHandler<T = any> = (event: IpcRendererEvent, ...args: T[]) =
  * @returns {boolean} - True if running in Electron, false otherwise
  */
 export function isElectron(): boolean {
+  // First check if we're explicitly in a web build via environment variable
+  if (import.meta.env && import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+    console.debug('Running in web mode due to VITE_IS_WEB_BUILD=true');
+    return false;
+  }
+  
   // Handle SSR case where window is not defined
   if (typeof window === 'undefined') {
     // Check for Node.js process in non-browser environment
@@ -118,6 +125,41 @@ export function isElectron(): boolean {
  */
 export function isWeb(): boolean {
   return !isElectron();
+}
+
+/**
+ * Helper for conditionally importing Electron-specific modules
+ * This approach prevents TypeScript errors during builds for web environments
+ * by ensuring the import is only attempted at runtime when in Electron
+ * 
+ * @example
+ * const { BrowserWindow } = await importElectron('electron');
+ * // or with a dynamic import path
+ * const remote = await importElectron('@electron/remote');
+ * 
+ * @param moduleName - The name of the Electron module to import
+ * @returns A promise that resolves to the imported module or null in web environments
+ */
+export async function importElectron<T = any>(moduleName: string): Promise<T | null> {
+  // Early return for explicit web builds
+  if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+    console.debug(`Skipping import of Electron module "${moduleName}" in web build`);
+    return null;
+  }
+  
+  // Only attempt to import if we're in Electron
+  if (isElectron()) {
+    try {
+      // Dynamic import to prevent build-time errors
+      const module = await import(/* @vite-ignore */ moduleName);
+      return module as T;
+    } catch (error) {
+      console.error(`Error importing Electron module "${moduleName}":`, error);
+      return null;
+    }
+  }
+  
+  return null;
 }
 
 /**
