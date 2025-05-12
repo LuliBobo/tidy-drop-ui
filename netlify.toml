@@ -1,0 +1,134 @@
+# Netlify Configuration for DropTidy Cross-Platform Application
+# This file configures both the web deployment and serverless functions
+
+# ------------------------------------------------------------------------------
+# BUILD SETTINGS
+# ------------------------------------------------------------------------------
+[build]
+  # Command to build the application for web deployment
+  # This runs the prepare:web script first to modify Electron-specific code
+  command = "npm run build:web"
+  
+  # Directory that contains the built web application
+  # This should match the 'outDir' setting in vite.config.ts
+  publish = "dist/renderer"
+  
+  # Directory containing serverless functions
+  # Netlify will look for functions here and deploy them automatically
+  functions = "netlify/functions"
+
+# ------------------------------------------------------------------------------
+# ENVIRONMENT VARIABLES
+# ------------------------------------------------------------------------------
+[build.environment]
+  # Node.js version for the build environment
+  # Must be compatible with all dependencies
+  NODE_VERSION = "18.19.0"
+  
+  # Bun version for faster build times
+  # Only used if you're using Bun in your build process
+  BUN_VERSION = "1.0.30"
+  
+  # Critical environment variable that helps detect web context
+  # This is checked in src/lib/environment.ts to determine the runtime environment
+  VITE_IS_WEB_BUILD = "true"
+  
+  # Disable TypeScript error checking for Electron-specific files
+  # This prevents TypeScript errors in Electron code during web builds
+  # The build will continue even if there are TypeScript errors in Electron files
+  TS_NODE_IGNORE_ELECTRON = "true"
+
+# ------------------------------------------------------------------------------
+# REDIRECTS FOR SPA ROUTING
+# ------------------------------------------------------------------------------
+# These redirects ensure proper client-side routing for your React application
+# React Router needs these to handle routes like /settings, /about, etc.
+[[redirects]]
+  # Match any URL path
+  from = "/*"
+  
+  # Serve the main HTML file for all routes
+  # This lets React Router handle the routing on the client side
+  to = "/index.html"
+  
+  # HTTP status code to return
+  # 200 means the redirect is not visible to users
+  status = 200
+  
+  # Force this rule to always be applied
+  # This ensures even direct access to URLs works properly
+  force = true
+
+# ------------------------------------------------------------------------------
+# FUNCTIONS CONFIGURATION
+# ------------------------------------------------------------------------------
+[functions]
+  # Directory where your serverless functions are located
+  # Should contain individual .js files that export handler functions
+  directory = "netlify/functions"
+  
+  # Set the Node.js bundler for functions
+  # esbuild is faster and more efficient than the default
+  node_bundler = "esbuild"
+  
+  # Function execution timeout in seconds
+  # Increase this if your functions need more processing time
+  # 10 seconds is usually sufficient for most operations
+  timeout = 10
+
+# ------------------------------------------------------------------------------
+# HEADERS
+# ------------------------------------------------------------------------------
+# Add security headers and cache control to all responses
+[[headers]]
+  # Apply these headers to all paths
+  for = "/*"
+  
+  [headers.values]
+    # Enable cross-origin isolation capabilities
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "require-corp"
+    
+    # Basic security headers
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    
+    # Content security policy
+    # Adjust this based on your app's specific needs
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
+
+# ------------------------------------------------------------------------------
+# PLUGINS
+# ------------------------------------------------------------------------------
+[[plugins]]
+  # Netlify plugin to monitor and analyze build performance
+  package = "@netlify/plugin-lighthouse"
+
+  # Plugin configuration
+  [plugins.inputs]
+    # Run Lighthouse audit on production URLs
+    output_path = "reports/lighthouse.html"
+
+# ------------------------------------------------------------------------------
+# DEV SETTINGS - for local Netlify development
+# ------------------------------------------------------------------------------
+[dev]
+  # Framework-specific command for local development
+  # This uses Vite's dev server with Netlify's function emulation
+  command = "vite"
+  
+  # Port to run the development server on
+  port = 5173
+  
+  # Directory to serve locally
+  publish = "public"
+  
+  # Automatically open browser when starting dev server
+  autoLaunch = true
+
+# Function-specific environment variables
+# These are placeholders - you should set the actual values in Netlify dashboard
+[template.environment]
+  SENDGRID_API_KEY = "Set this in Netlify dashboard"
+  FEEDBACK_EMAIL = "feedback@droptidy.com"

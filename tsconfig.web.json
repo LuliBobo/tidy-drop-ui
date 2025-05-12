@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "exclude": [
+    "src/main/**/*",
+    "src/preload/**/*",
+    "src/backend/**/*",
+    "node_modules"
+  ]
+}

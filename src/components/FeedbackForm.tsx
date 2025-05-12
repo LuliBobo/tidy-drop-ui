@@ -17,6 +17,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { MessageCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { safeIpcInvoke, isElectron } from '@/lib/environment';
 
 // Define the feedback form validation schema
 const feedbackSchema = z.object({
@@ -27,6 +28,44 @@ const feedbackSchema = z.object({
 });
 
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
+
+/**
+ * Response type for feedback submission
+ * Compatible with both Electron IPC and Web API responses
+ */
+interface FeedbackResponse {
+  success: boolean;
+  savedLocally?: boolean;
+  error?: string;
+}
+
+/**
+ * Web API response from the feedback endpoint
+ */
+interface WebApiFeedbackResponse {
+  success?: boolean;
+  message?: string;
+  error?: string;
+  // Use more specific types for additional properties
+  timestamp?: string;
+  id?: string;
+  status?: number;
+  [key: string]: string | number | boolean | undefined;
+}
+
+/**
+ * Convert a web API response to our standardized FeedbackResponse format
+ * This ensures consistent typing across platforms
+ */
+const toFeedbackResponse = (
+  response: Response, 
+  data: WebApiFeedbackResponse
+): FeedbackResponse => {
+  return {
+    success: response.ok && (data.success !== false),
+    error: !response.ok ? data.message || data.error || 'Failed to send feedback' : undefined
+  };
+}
 
 interface FeedbackFormProps {
   open?: boolean;
@@ -45,6 +84,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(open || false);
+  const [isElectronEnv] = useState(isElectron());
 
   const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
@@ -60,25 +100,86 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const onSubmit = async (values: FeedbackFormValues) => {
     setIsSubmitting(true);
     try {
-      const result = await window.electron.ipcRenderer.invoke('send-feedback', values);
+      // Use our environment utility to safely invoke IPC or web fallback
+      const result = await safeIpcInvoke<FeedbackResponse>(
+        'send-feedback',
+        [values],
+        // Web fallback implementation using Netlify serverless function
+        async () => {
+          try {
+            // In a web environment, call our Netlify serverless function
+            const response = await fetch('/.netlify/functions/feedback', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                ...values,
+                source: 'web',
+                timestamp: new Date().toISOString()
+              })
+            });
+            
+            const data = await response.json() as WebApiFeedbackResponse;
+            
+            // Use the converter function to ensure consistent response format
+            return toFeedbackResponse(response, data);
+          } catch (fetchError) {
+            // Handle network errors and format them consistently
+            console.error('Feedback submission network error:', fetchError);
+            return {
+              success: false,
+              error: fetchError instanceof Error 
+                ? fetchError.message 
+                : 'Network error while sending feedback'
+            };
+          }
+        }
+      );
       
+      // Safely handle potentially undefined result
+      if (!result) {
+        console.error('Feedback submission returned undefined result');
+        throw new Error("No response received from feedback submission");
+      }
+      
+      // Log the result based on environment for debugging
+      console.log(`Feedback submission ${result.success ? 'succeeded' : 'failed'} in ${isElectronEnv ? 'Electron' : 'web'} environment`);
+      
+      // Handle the response with proper type checking
       if (result.success) {
+        // Log different messages based on environment
+        console.log(
+          `Feedback submitted successfully in ${isElectronEnv ? 'Electron' : 'web'} environment`,
+          values.category
+        );
+        
         toast({
           title: "Feedback sent",
           description: result.savedLocally 
             ? "We couldn't send your feedback online, but we've saved it locally for later submission." 
             : "Thank you for your feedback!",
-          variant: result.savedLocally ? "default" : "default"
+          variant: "default"
         });
-        form.reset();
+        
+        // Reset form and close dialog
+        form.reset({
+          name: '',
+          email: '',
+          message: '',
+          category: 'other'
+        });
+        
         handleDialogClose();
       } else {
-        throw new Error(result.error || "Failed to send feedback");
+        // Handle error case with safe access to error message
+        const errorMessage = result.error || "Failed to send feedback";
+        throw new Error(errorMessage);
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: `There was a problem sending your feedback: ${error}`,
+        description: `There was a problem sending your feedback: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {

@@ -17,12 +17,36 @@ import FeedbackForm from './FeedbackForm';
 
 const THEME_KEY = "theme";
 
-function getPreferredTheme(): "light" | "dark" {
+/**
+ * Type definition for theme to ensure type safety
+ */
+type Theme = "light" | "dark";
+
+/**
+ * Gets the preferred theme from localStorage or system preference
+ * with proper type checks and fallbacks
+ */
+function getPreferredTheme(): Theme {
+  // Handle SSR case
   if (typeof window === "undefined") return "light";
-  const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || "dark") return stored;
-  const mq = window.matchMedia("(prefers-color-scheme: dark)");
-  return mq.matches ? "dark" : "light";
+  
+  try {
+    // Try to get theme from localStorage
+    const stored = localStorage.getItem(THEME_KEY);
+    
+    // Check if stored value is valid
+    if (stored === "light" || stored === "dark") {
+      return stored as Theme;
+    }
+    
+    // If no valid value in localStorage, use system preference
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    return mq.matches ? "dark" : "light";
+  } catch (error) {
+    // Handle localStorage access errors (e.g., in incognito mode)
+    console.warn("Failed to access localStorage for theme preference:", error);
+    return "light"; // Default fallback
+  }
 }
 
 interface NavLink {
@@ -40,7 +64,7 @@ const navLinks: NavLink[] = [
 ];
 
 const Navbar = () => {
-  const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
+  const [theme, setTheme] = useState<Theme>(getPreferredTheme());
   const location = useLocation();
   const navigate = useNavigate();
   const { license } = useLicense();
@@ -50,22 +74,48 @@ const Navbar = () => {
   const [activeSection, setActiveSection] = useState<string>('hero');
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Apply theme to document and save to localStorage
   useEffect(() => {
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
-    localStorage.setItem(THEME_KEY, theme);
+    try {
+      // Update document classes
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(theme);
+      
+      // Persist to localStorage
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      console.warn("Could not save theme preference:", error);
+    }
   }, [theme]);
 
   // Listen to system preference changes
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    
+    // Update theme based on system changes if user hasn't set a preference
     const handler = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem(THEME_KEY)) {
-        setTheme(e.matches ? "dark" : "light");
+      try {
+        // Only update if user hasn't explicitly set a preference
+        const hasUserPreference = localStorage.getItem(THEME_KEY) !== null;
+        if (!hasUserPreference) {
+          setTheme(e.matches ? "dark" : "light");
+        }
+      } catch (error) {
+        // Handle localStorage access errors
+        console.warn("Error accessing theme preference:", error);
       }
     };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    
+    // Add event listener with browser compatibility check
+    if (typeof mq.addEventListener === 'function') {
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    } else {
+      // Fallback for older browsers
+      mq.addListener(handler);
+      return () => mq.removeListener(handler);
+    }
   }, []);
 
   // Set up intersection observer for sections
@@ -121,7 +171,13 @@ const Navbar = () => {
     };
   }, [location.pathname]);
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  /**
+   * Toggle between light and dark themes with type safety
+   */
+  const toggleTheme = () => {
+    const newTheme: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+  };
 
   const handleNavigation = (href: string, sectionId: string) => {
     if (isPrivacyPage || isCookiePolicyPage || isTermsOfServicePage) {
