@@ -94,37 +94,81 @@ const replacements = [
     replacement: '// WEB BUILD: Electron-related package import removed for web deployment',
     description: 'Remove imports from electron-related packages'
   },
-  
-  // 4. Replace direct window.electron usage with safe access
+
+  // 4. Handle function calls to window.electron in various contexts
   {
-    name: 'Direct window.electron usage',
-    // Match direct access to window.electron
-    pattern: /(window\.electron\.)(\w+)(\.\w+\()/g,
-    replacement: '/* WEB BUILD: Safe access */ (window.electron && window.electron.$2$3 || (() => Promise.resolve(undefined)))',
-    description: 'Make window.electron access safe for web'
+    name: 'Window.electron function calls',
+    pattern: /(const|let|var)?\s*(\w+)\s*=\s*(?:await\s+)?(window\.electron[?.][^;()]*\([^;)]*\))/g,
+    replacement: (match, declType, varName, funcCall) => {
+      // For variable declarations (const result = window.electron...)
+      if (declType) {
+        return `${declType} ${varName} = /* WEB VERSION */ (false && ${funcCall}) ?? (() => { 
+          console.log("Electron API not available in web version"); 
+          return undefined; 
+        })()`;
+      }
+      // For standalone function calls
+      return `/* WEB VERSION */ (false && ${funcCall}) ?? (() => { 
+        console.log("Electron API not available in web version"); 
+      })()`;
+    },
+    description: 'Make window.electron function calls safe with proper fallbacks'
   },
-  
-  // 5. Handle IPC renderer invoke calls
+
+  // 5. Handle if/then blocks that use window.electron with proper syntax preservation
   {
-    name: 'IPC renderer invoke with fallback',
-    // Match lines that use window.electron?.ipcRenderer.invoke
-    pattern: /(window\.electron\?\.ipcRenderer\.invoke\(['"].*?['"])([^)]*)\)/g,
-    replacement: '/* WEB BUILD: Added web fallback */ ($1$2).catch(err => { console.warn("IPC call failed in web context:", err); return undefined; })',
-    description: 'Add error handling to IPC calls'
+    name: 'Electron API in if conditions',
+    pattern: /if\s*\(\s*window\.electron[^)]*\)\s*\{([^}]*)\}/g,
+    replacement: (match, blockContent) => {
+      return `if (false /* WEB VERSION: Electron check disabled */) {${blockContent}}`;
+    },
+    description: 'Preserve if blocks but disable Electron conditions'
   },
-  
-  // 6. Replace IPC renderer on/once event handlers
+
+  // 6. Ensure window.electron property access is safe
   {
-    name: 'IPC event handlers',
-    // Match IPC .on and .once event handlers
-    pattern: /(window\.electron\?\.ipcRenderer\.)(?:on|once)\(['"]([^'"]+)['"],\s*(.*?)\)/g,
-    replacement: '/* WEB BUILD: Disabled IPC event handler for "$2" */ $1on?.("$2", $3) /* Safe for web */',
-    description: 'Make IPC event handlers safe for web'
+    name: 'Window.electron property access',
+    pattern: /window\.electron\.(\w+)\.(\w+)(?!\()/g,
+    replacement: '/* WEB VERSION */ (window.electron?.$1?.$2 ?? undefined)',
+    description: 'Make window.electron property access safe'
   },
-  
-  // 7. Handle Electron-specific functions with safe alternatives
+
+  // 7. Enhanced pattern for IPC invoke with proper TypeScript safety
   {
-    name: 'Electron-specific API calls',
+    name: 'IPC renderer invoke with typed fallback',
+    pattern: /(await\s+)?window\.electron[?]?\.ipcRenderer\.invoke\(['"]([^'"]+)['"]([^)]*)\)/g,
+    replacement: (match, awaitPrefix, channel, args) => {
+      const await_ = awaitPrefix || '';
+      return `${await_}safeIpcInvoke('${channel}'${args}, async () => { 
+        console.log("Web fallback for IPC channel: ${channel}"); 
+        return undefined; 
+      })`;
+    },
+    description: 'Replace direct IPC calls with safeIpcInvoke utility'
+  },
+
+  // 8. Handle IPC renderer event handlers
+  {
+    name: 'IPC event handler registration',
+    pattern: /(window\.electron[?]?\.ipcRenderer\.)(?:on|once)\(['"]([^'"]+)['"],\s*([\w.]+|(?:function\s*\([^)]*\)\s*\{[^}]*\}))\)/g,
+    replacement: 'safeIpcOn("$2", $3)',
+    description: 'Replace IPC event handlers with safeIpcOn utility'
+  },
+
+  // 9. Handle environment detection in if/else blocks
+  {
+    name: 'Environment detection if/else',
+    pattern: /if\s*\(\s*(isElectron\(\)|!isWeb\(\))\s*\)\s*\{([\s\S]*?)\}\s*else\s*\{([\s\S]*?)\}/g,
+    replacement: (match, condition, electronCode, webCode) => {
+      // Keep the entire block intact, the isElectron() function will properly handle the environment
+      return match;
+    },
+    description: 'Preserve environment detection blocks'
+  },
+
+  // 10. Handle standalone Electron API calls
+  {
+    name: 'Standalone Electron API calls',
     pattern: /(?:app|shell|dialog|nativeImage|screen|powerMonitor|clipboard)\.(\w+)\(/g,
     replacement: '/* WEB BUILD: Disabled Electron API */ (()=>undefined)(',
     description: 'Disable Electron-specific API calls'
@@ -213,23 +257,55 @@ async function processFile(filePath) {
     let modifiedContent = content;
     let isModified = false;
     
+    // First check if the file is importing or using environment utilities
+    const usesEnvironmentUtils = (/isElectron|isWeb|safeIpcInvoke|safeIpcOn/).test(content);
+
+    // Add environment utility imports if the file will need them
+    if (!usesEnvironmentUtils && 
+        (/window\.electron/).test(content) && 
+        !(/['"]@\/lib\/environment['"]/).test(content)) {
+      // Needs environment utilities but doesn't import them - add the import
+      if (isTypescriptFile(filePath) && hasElectronUsage(content)) {
+        const importStatement = "import { isElectron, safeIpcInvoke, safeIpcOn } from '@/lib/environment';\n";
+        modifiedContent = addImport(modifiedContent, importStatement);
+        isModified = true;
+        logger.info(`Added environment utilities import to ${path.basename(filePath)}`);
+      }
+    }
+    
     // Apply each replacement pattern
     for (const replacement of replacements) {
       const originalContent = modifiedContent;
       
-      // Apply the replacement
-      modifiedContent = modifiedContent.replace(replacement.pattern, (match) => {
-        logger.info(`Found in ${path.basename(filePath)}: ${replacement.name} - "${match.trim()}"`);
-        
-        // Count specific types of findings
-        if (replacement.name.includes('import') || replacement.name.includes('require')) {
-          stats.electronImportsFound++;
-        } else if (replacement.name.includes('IPC')) {
-          stats.ipcCallsFound++;
-        }
-        
-        return replacement.replacement;
-      });
+      // Apply the replacement - if it's a function, use it, otherwise use it as a string
+      if (typeof replacement.replacement === 'function') {
+        modifiedContent = modifiedContent.replace(replacement.pattern, (...args) => {
+          const match = args[0];
+          logger.info(`Found in ${path.basename(filePath)}: ${replacement.name} - "${match.trim().slice(0, 100)}..."`);
+          
+          // Count specific types of findings
+          if (replacement.name.includes('import') || replacement.name.includes('require')) {
+            stats.electronImportsFound++;
+          } else if (replacement.name.includes('IPC')) {
+            stats.ipcCallsFound++;
+          }
+          
+          return replacement.replacement(...args);
+        });
+      } else {
+        modifiedContent = modifiedContent.replace(replacement.pattern, (match) => {
+          logger.info(`Found in ${path.basename(filePath)}: ${replacement.name} - "${match.trim().slice(0, 100)}..."`);
+          
+          // Count specific types of findings
+          if (replacement.name.includes('import') || replacement.name.includes('require')) {
+            stats.electronImportsFound++;
+          } else if (replacement.name.includes('IPC')) {
+            stats.ipcCallsFound++;
+          }
+          
+          return replacement.replacement;
+        });
+      }
       
       // Check if this pattern made any changes
       if (originalContent !== modifiedContent) {
@@ -251,9 +327,104 @@ async function processFile(filePath) {
       // Write modified content
       await writeFile(filePath, modifiedContent, 'utf8');
       logger.success(`Modified: ${filePath}`);
+      
+      // Check for TypeScript errors in the modified file
+      if (isTypescriptFile(filePath)) {
+        try {
+          await validateTypescriptSyntax(filePath);
+        } catch (tsError) {
+          logger.warning(`TypeScript errors detected in modified file: ${path.basename(filePath)}`);
+          logger.warning(tsError.message);
+        }
+      }
     }
   } catch (error) {
     logger.error(`Error processing file: ${filePath}`, error);
+  }
+}
+
+/**
+ * Check if a file is a TypeScript file
+ * @param {string} filePath - Path to the file
+ * @returns {boolean} - True if the file is a TypeScript file
+ */
+function isTypescriptFile(filePath) {
+  return /\.(ts|tsx)$/.test(filePath);
+}
+
+/**
+ * Check if the content has Electron usage
+ * @param {string} content - The file content
+ * @returns {boolean} - True if the content has Electron usage
+ */
+function hasElectronUsage(content) {
+  return (/window\.electron/).test(content);
+}
+
+/**
+ * Add an import statement after the last import or at the top of the file
+ * @param {string} content - The file content
+ * @param {string} importStatement - The import statement to add
+ * @returns {string} - The modified content
+ */
+function addImport(content, importStatement) {
+  // Find the position after the last import statement
+  const importRegex = /^import\s+.*?from\s+['"].*?['"];?$/gm;
+  const matches = [...content.matchAll(importRegex)];
+  
+  if (matches.length > 0) {
+    // Get the last import statement and its position
+    const lastMatch = matches[matches.length - 1];
+    const insertPosition = lastMatch.index + lastMatch[0].length;
+    
+    // Insert the new import after the last import
+    return content.slice(0, insertPosition) + '\n' + importStatement + content.slice(insertPosition);
+  } else {
+    // If no imports found, add at the top of the file
+    return importStatement + content;
+  }
+}
+
+/**
+ * Validate TypeScript syntax of a file
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<void>} - Resolves if file has valid syntax, rejects with error otherwise
+ */
+async function validateTypescriptSyntax(filePath) {
+  // This is a placeholder for a real TypeScript validator
+  // In a real implementation, you might use the TypeScript Compiler API
+  // or a command line call to tsc to validate the syntax
+  
+  // Here we'll just do some basic checks
+  const content = await readFile(filePath, 'utf8');
+  
+  // Check for common TypeScript syntax errors
+  const problems = [];
+  
+  if (content.includes('await') && !content.match(/async\s+/) && !content.match(/\.then\(/)) {
+    problems.push('Found await without async keyword');
+  }
+  
+  if ((content.match(/\{/g) || []).length !== (content.match(/\}/g) || []).length) {
+    problems.push('Mismatched curly braces');
+  }
+  
+  if ((content.match(/\(/g) || []).length !== (content.match(/\)/g) || []).length) {
+    problems.push('Mismatched parentheses');
+  }
+  
+  // Look for incomplete if statements
+  if (content.match(/if\s*\([^{]*\)\s*(?!\{)/)) {
+    problems.push('Incomplete if statement (missing brackets)');
+  }
+  
+  // Look for incomplete else statements
+  if (content.match(/else\s*(?!\{)/)) {
+    problems.push('Incomplete else statement (missing brackets)');
+  }
+  
+  if (problems.length > 0) {
+    throw new Error(`TypeScript syntax problems detected: ${problems.join('; ')}`);
   }
 }
 
@@ -367,5 +538,155 @@ async function main() {
   }
 }
 
+/**
+ * Creates a web-compatible fallbacks module if it doesn't exist in the project
+ */
+async function ensureFallbacksExist() {
+  const fallbacksPath = path.join(process.cwd(), 'src/components/ElectronFallbacks.tsx');
+  const environmentPath = path.join(process.cwd(), 'src/lib/environment.ts');
+  
+  // If ElectronFallbacks.tsx doesn't exist, create it
+  if (!fs.existsSync(fallbacksPath)) {
+    logger.info('Creating ElectronFallbacks.tsx module...');
+    
+    const fallbacksContent = `/**
+ * Electron API Fallbacks for Web Deployment
+ * 
+ * This module provides web-safe fallbacks for Electron APIs that can be used
+ * during web deployment. It helps maintain TypeScript integrity by providing
+ * proper function signatures and behavior.
+ */
+
+import { toast } from '@/hooks/use-toast';
+import { isElectron } from '@/lib/environment';
+
+/**
+ * Opens a folder in the system file explorer
+ * Falls back to a toast message in web environment
+ */
+export async function openFolder(folderPath: string): Promise<void> {
+  if (!isElectron()) {
+    toast({
+      title: "Web Version",
+      description: "Opening folders is only available in the desktop app",
+      variant: "default"
+    });
+    return;
+  }
+  
+  try {
+    await window.electron?.app.openFolder(folderPath);
+  } catch (error) {
+    console.error("Error opening folder:", error);
+    toast({
+      title: "Error",
+      description: "Failed to open folder",
+      variant: "destructive"
+    });
+  }
+}
+
+/**
+ * Shows an item in the system file explorer
+ * Falls back to a toast message in web environment
+ */
+export async function showItemInFolder(filePath: string): Promise<void> {
+  if (!isElectron()) {
+    toast({
+      title: "Web Version",
+      description: "Showing files in folder is only available in the desktop app",
+      variant: "default"
+    });
+    return;
+  }
+  
+  try {
+    await window.electron?.app.showItemInFolder(filePath);
+  } catch (error) {
+    console.error("Error showing item in folder:", error);
+    toast({
+      title: "Error",
+      description: "Failed to show item in folder",
+      variant: "destructive"
+    });
+  }
+}
+
+/**
+ * Gets a path from the system
+ * Falls back to a reasonable default in web environment
+ */
+export function getPath(name: string): string {
+  if (!isElectron()) {
+    const webFallbacks: Record<string, string> = {
+      'home': '/home',
+      'appData': '/appData',
+      'userData': '/userData',
+      'temp': '/temp',
+      'downloads': '/downloads',
+      'documents': '/documents'
+    };
+    
+    return webFallbacks[name] || '/';
+  }
+  
+  try {
+    return window.electron?.app.getPath(name) || '/';
+  } catch (error) {
+    console.error(\`Error getting path for \${name}:\`, error);
+    return '/';
+  }
+}
+
+/**
+ * Creates a zip file from multiple files
+ * Falls back to a toast message in web environment
+ */
+export async function createZip(filePaths: string[]): Promise<string | undefined> {
+  if (!isElectron()) {
+    toast({
+      title: "Web Version",
+      description: "Creating ZIP archives is only available in the desktop app",
+      variant: "default"
+    });
+    return undefined;
+  }
+  
+  try {
+    return await window.electron?.ipcRenderer.invoke('create-zip', filePaths);
+  } catch (error) {
+    console.error("Error creating ZIP:", error);
+    toast({
+      title: "Error",
+      description: "Failed to create ZIP archive",
+      variant: "destructive"
+    });
+    return undefined;
+  }
+}`;
+    
+    await writeFile(fallbacksPath, fallbacksContent, 'utf8');
+    logger.success('Created ElectronFallbacks.tsx');
+  }
+
+  // Check if environment.ts exists and has required functions
+  if (fs.existsSync(environmentPath)) {
+    const envContent = await readFile(environmentPath, 'utf8');
+    
+    // If it doesn't have safeIpcInvoke, add it
+    if (!envContent.includes('safeIpcInvoke')) {
+      logger.warning('environment.ts found but missing safeIpcInvoke function.');
+    }
+    
+    // If it doesn't have isElectron, add it
+    if (!envContent.includes('isElectron()')) {
+      logger.warning('environment.ts found but missing isElectron function.');
+    }
+  }
+}
+
 // Run the script
-main();
+main().then(async () => {
+  await ensureFallbacksExist();
+  logger.info('Finished preparing for web build');
+});

@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Slider } from './ui/slider';
+import { Folder, Download, AlertCircle } from 'lucide-react';
 import { isElectron, isWeb, importElectron, safeIpcInvoke } from '@/lib/environment';
 import { toast } from '@/hooks/use-toast';
 
 // Define types for our component props and state
 interface ExportSettingsProps {
   title?: string;
+  onSettingsChange?: (settings: UserSettings) => void;
 }
 
 interface UserSettings {
@@ -19,6 +25,7 @@ interface UserSettings {
 /**
  * Example component that demonstrates cross-platform patterns
  * This component handles export settings which require filesystem access in Electron
+ * but gracefully degrades to web-compatible alternatives when running in a browser
  * but provides web alternatives when running in a browser
  */
 export function ExportSettings({ title = 'Export Settings' }: ExportSettingsProps) {

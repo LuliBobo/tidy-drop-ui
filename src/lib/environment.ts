@@ -17,6 +17,13 @@
  *   console.log('Running in browser');
  * }
  * 
+ * // Safely import Electron module
+ * const electron = await importElectron<typeof import('electron')>('electron');
+ * if (electron) {
+ *   // Use Electron APIs
+ *   const { app } = electron;
+ * }
+ * 
  * // Safely invoke IPC with fallback
  * const result = await safeIpcInvoke<string>(
  *   'get-file-path', 
@@ -38,7 +45,8 @@
  
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { IpcRendererEvent } from 'electron';
+// Import type only, not the actual module
+import type { IpcRendererEvent } from 'electron';
 
 /**
  * Type definition for IPC invoke channel name
@@ -84,8 +92,15 @@ export type IpcEventHandler<T = any> = (event: IpcRendererEvent, ...args: T[]) =
  * 
  * @returns {boolean} - True if running in Electron, false otherwise
  */
+/**
+ * Check if the code is running in an Electron context.
+ * Uses multiple detection methods for reliability.
+ * 
+ * @returns {boolean} True if running in Electron, false otherwise
+ */
 export function isElectron(): boolean {
-  // First check if we're explicitly in a web build via environment variable
+  // HIGHEST PRIORITY: Check for explicit environment variable
+  // This is set during our Netlify builds and web development
   if (import.meta.env && import.meta.env.VITE_IS_WEB_BUILD === 'true') {
     console.debug('Running in web mode due to VITE_IS_WEB_BUILD=true');
     return false;
@@ -98,6 +113,20 @@ export function isElectron(): boolean {
            process?.versions?.electron !== undefined;
   }
 
+  // For development - check localStorage override
+  try {
+    const envOverride = localStorage.getItem('DROPTIDY_FORCE_ENVIRONMENT');
+    if (envOverride === 'web') {
+      console.debug('Forced web environment via localStorage override');
+      return false;
+    } else if (envOverride === 'electron') {
+      console.debug('Forced electron environment via localStorage override');
+      return true;
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
   try {
     // Check for the presence of Electron-specific properties
     const userAgent = navigator?.userAgent?.toLowerCase() || '';
@@ -106,7 +135,7 @@ export function isElectron(): boolean {
     return (
       // Method 1: Check window.process
       (window as any).process?.versions?.electron !== undefined ||
-      // Method 2: Check for electron bridge exposed by contextBridge
+      // Method 2: Check for electron bridge exposed by contextBridge (most reliable)
       (window as any).electron !== undefined ||
       // Method 3: Check user agent (less reliable but useful as fallback)
       userAgent.indexOf('electron') !== -1
@@ -132,13 +161,16 @@ export function isWeb(): boolean {
  * This approach prevents TypeScript errors during builds for web environments
  * by ensuring the import is only attempted at runtime when in Electron
  * 
- * @example
- * const { BrowserWindow } = await importElectron('electron');
- * // or with a dynamic import path
- * const remote = await importElectron('@electron/remote');
- * 
- * @param moduleName - The name of the Electron module to import
+ * @template T The expected module type
+ * @param moduleName The name of the Electron module to import
  * @returns A promise that resolves to the imported module or null in web environments
+ * 
+ * @example
+ * const electron = await importElectron<typeof import('electron')>('electron');
+ * if (electron) {
+ *   // Use Electron APIs safely
+ *   const { BrowserWindow } = electron;
+ * }
  */
 export async function importElectron<T = any>(moduleName: string): Promise<T | null> {
   // Early return for explicit web builds

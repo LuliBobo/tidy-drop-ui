@@ -2,7 +2,7 @@
 
 This guide explains how to deploy your DropTidy application to Netlify, ensuring proper handling of Electron-specific code in the web environment.
 
-## Understanding the Cross-Platform Architecture
+## Understanding Web vs Electron Builds
 
 DropTidy is designed to run in two environments:
 

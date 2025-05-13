@@ -4,7 +4,6 @@ import { Download, AlertTriangle, Folder, Settings as SettingsIcon } from 'lucid
 import { Progress } from "./ui/progress";
 import { Alert, AlertDescription } from "./ui/alert";
 import { 
-  checkDailyQuotaExceeded, 
   incrementDailyQuota, 
   getRemainingQuota,
   getCurrentLicense 
@@ -15,37 +14,52 @@ import SettingsModal from './SettingsModal';
 import UpgradeModal from './UpgradeModal';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
+import { openFolder } from './ElectronFallbacks';
 
-type PathName = 'home' | 'appData' | 'userData' | 'sessionData' | 'temp' | 'exe' | 'module' | 
-                'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 
-                'recent' | 'logs' | 'crashDumps';
+import type { CleanResult } from '@/types/electron';
 
-declare global {
-  interface Window {
-    electron: {
-      ipcRenderer: {
-        invoke(channel: 'clean-image', filePath: string): Promise<CleanResult>;
-        invoke(channel: 'clean-video', input: string, outputPath: string): Promise<CleanResult>;
-        invoke(channel: 'create-zip', files: string[]): Promise<string>;
-        invoke(channel: 'load-settings'): Promise<{ outputDir: string; autoOpenFolder: boolean }>;
-        invoke(channel: 'save-settings', settings: { outputDir: string; autoOpenFolder: boolean }): Promise<boolean>;
-        invoke(channel: 'select-directory'): Promise<string | null>;
-      };
-      app: {
-        getPath(name: PathName): string;
-        showItemInFolder(path: string): void;
-        openFolder(path: string): void;
-      };
-    };
+// Check if running in web build environment
+const isWebBuild = import.meta.env.VITE_IS_WEB_BUILD === 'true';
+
+// Define types for Electron API
+type ElectronApiType = {
+  app: {
+    openFolder: (path: string) => Promise<boolean>;
+    showItemInFolder: (path: string) => Promise<void>;
+    getPath: (type: string) => string;
+  };
+  ipcRenderer: {
+    invoke: <T = unknown>(channel: string, ...args: unknown[]) => Promise<T>;
+  };
+};
+
+// Dummy functions to replace Electron API calls
+const electronAPI: ElectronApiType = {
+  app: {
+    openFolder: async (path: string): Promise<boolean> => {
+      console.log('openFolder not available in web version', path);
+      return false;
+    },
+    showItemInFolder: async (path: string): Promise<void> => {
+      console.log('showItemInFolder not available in web version', path);
+    },
+    getPath: (type: string): string => {
+      console.log('getPath not available in web version', type);
+      return '/';
+    }
+  },
+  ipcRenderer: {
+    invoke: async <T = unknown>(channel: string, ...args: unknown[]): Promise<T> => {
+      console.log(`ipcRenderer.invoke not available in web: ${channel}`, args);
+      return null as unknown as T;
+    }
   }
-}
+};
 
-interface CleanResult {
-  success: boolean;
-  originalSize?: number;
-  cleanedSize?: number;
-  metadata?: { [key: string]: string | number };
-}
+// Helper function to safely access Electron APIs
+const getElectron = () => {
+  return isWebBuild ? electronAPI : window.electron;
+};
 
 interface FileItem {
   file: File;
@@ -81,13 +95,28 @@ export const FileCleaner: React.FC = () => {
   // Load user settings from config file
   const loadSettings = async () => {
     try {
-      const settings = await window.electron.ipcRenderer.invoke('load-settings');
-      setOutputDir(settings.outputDir);
-      setAutoOpenFolder(settings.autoOpenFolder);
+      if (isWebBuild) {
+        // Web environment - use default values
+        setOutputDir('/Cleaned'); // Web can't access real file system paths
+        setAutoOpenFolder(false);
+        return;
+      }
+      
+      // Electron environment - use IPC call
+      const settings = await getElectron().ipcRenderer.invoke<{ outputDir: string; autoOpenFolder: boolean }>('load-settings');
+      
+      if (settings) {
+        setOutputDir(settings.outputDir);
+        setAutoOpenFolder(settings.autoOpenFolder);
+      } else {
+        // Fallback to default values if settings is undefined
+        setOutputDir('/Cleaned');
+        setAutoOpenFolder(false);
+      }
     } catch (error) {
       console.error('Failed to load settings:', error);
       // Fallback to default values
-      setOutputDir(path.join(window.electron.app.getPath('home'), 'Cleaned'));
+      setOutputDir('/Cleaned');
       setAutoOpenFolder(false);
     }
   };
@@ -147,50 +176,94 @@ export const FileCleaner: React.FC = () => {
     try {
       if (isImage) {
         const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron.ipcRenderer.invoke('clean-image', fileItem.path);
-        if (result.success) {
+        
+        let result: CleanResult | null = null;
+        
+        if (isWebBuild) {
+          // Web version - show limitation message
+          toast({
+            title: "Web Version Limitation",
+            description: "Image cleaning is only available in the desktop app",
+            variant: "destructive"
+          });
+          result = { success: false };
+        } else {
+          // Electron version - use direct API call
+          result = await getElectron().ipcRenderer.invoke<CleanResult>('clean-image', fileItem.path);
+        }
+
+        if (result?.success) {
           incrementDailyQuota();
           setRemainingQuota(getRemainingQuota());
+          const outputPath = path.join(outputDir, cleanedFileName);
           updateFileStatus(
             fileItem.file.name,
             'success',
-            path.join(outputDir, cleanedFileName),
+            outputPath,
             result.originalSize,
             result.cleanedSize,
             result.metadata
           );
           
           // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result.success) {
-            window.electron.app.openFolder(outputDir);
+          if (autoOpenFolder) {
+            await openFolder(outputDir);
           }
         } else {
-          updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean image');
+          updateFileStatus(
+            fileItem.file.name, 
+            'error', 
+            undefined, 
+            undefined, 
+            undefined, 
+            undefined, 
+            'Failed to clean image'
+          );
         }
       } else if (isVideo) {
         const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron.ipcRenderer.invoke(
-          'clean-video',
-          fileItem.path,
-          path.join(outputDir, cleanedFileName)
-        );
-        if (result.success) {
+        const outputPath = path.join(outputDir, cleanedFileName);
+        
+        let result: CleanResult | null = null;
+        
+        if (isWebBuild) {
+          // Web version - show limitation message
+          toast({
+            title: "Web Version Limitation",
+            description: "Video cleaning is only available in the desktop app",
+            variant: "destructive"
+          });
+          result = { success: false };
+        } else {
+          // Electron version - use direct API call
+          result = await getElectron().ipcRenderer.invoke<CleanResult>('clean-video', fileItem.path, outputPath);
+        }
+
+        if (result?.success) {
           incrementDailyQuota();
           setRemainingQuota(getRemainingQuota());
           updateFileStatus(
             fileItem.file.name,
             'success',
-            path.join(outputDir, cleanedFileName),
+            outputPath,
             result.originalSize,
             result.cleanedSize
           );
           
           // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result.success) {
-            window.electron.app.openFolder(outputDir);
+          if (autoOpenFolder) {
+            await openFolder(outputDir);
           }
         } else {
-          updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean video');
+          updateFileStatus(
+            fileItem.file.name, 
+            'error', 
+            undefined, 
+            undefined, 
+            undefined, 
+            undefined, 
+            'Failed to clean video'
+          );
         }
       }
     } catch (error) {
@@ -232,18 +305,41 @@ export const FileCleaner: React.FC = () => {
       
       if (successfulFiles.length === 0) return;
 
-      const zipPath = await window.electron.ipcRenderer.invoke('create-zip', successfulFiles);
-      // Otvoriť priečinok s exportovaným ZIP súborom
-      window.electron.app.showItemInFolder(zipPath);
+      let zipPath = '';
+      
+      if (isWebBuild) {
+        // Web version - show limitation message
+        toast({
+          title: "Web Version Limitation",
+          description: "Creating ZIP archives is only available in the desktop app",
+          variant: "destructive"
+        });
+      } else {
+        // Electron version - use direct API call
+        zipPath = await getElectron().ipcRenderer.invoke<string>('create-zip', successfulFiles);
+      }
+
+      if (zipPath && zipPath.length > 0) {
+        const { showItemInFolder } = await import('@/components/ElectronFallbacks');
+        await showItemInFolder(zipPath);
+      }
     } catch (error) {
       console.error('Export failed:', error);
+      
+      toast({
+        title: "Export Failed",
+        description: "Failed to create ZIP archive. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsExporting(false);
     }
   };
 
-  const handleOpenOutputFolder = useCallback(() => {
-    window.electron.app.openFolder(outputDir);
+  const handleOpenOutputFolder = useCallback(async () => {
+    // Import and use the safer approach with proper type safety
+    const { openFolder } = await import('@/components/ElectronFallbacks');
+    await openFolder(outputDir);
   }, [outputDir]);
 
   // Function to format metadata for display
@@ -348,18 +444,21 @@ export const FileCleaner: React.FC = () => {
               <button
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
                 onClick={handleExportZip}
-                disabled={isExporting || !LICENSE_FEATURES[currentLicense].allowCustomExport}
+                disabled={isExporting || !LICENSE_FEATURES[currentLicense].allowCustomExport || isWebBuild}
+                title={isWebBuild ? "Not available in web version" : "Export cleaned files as ZIP"}
               >
                 <Download className="h-4 w-4" />
-                {isExporting ? 'Exporting...' : 'Export ZIP'}
+                {isWebBuild ? "Desktop Only" : (isExporting ? 'Exporting...' : 'Export ZIP')}
               </button>
               
               <button
-                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2"
+                className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50"
                 onClick={handleOpenOutputFolder}
+                disabled={isWebBuild}
+                title={isWebBuild ? "Not available in web version" : "Open output folder"}
               >
                 <Folder className="h-4 w-4" />
-                Open Folder
+                {isWebBuild ? "Desktop Only" : "Open Folder"}
               </button>
             </>
           )}
@@ -371,6 +470,7 @@ export const FileCleaner: React.FC = () => {
             size="icon"
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Settings"
+            title={isWebBuild ? "Limited settings in web version" : "Open settings"}
           >
             <SettingsIcon className="h-4 w-4" />
           </Button>

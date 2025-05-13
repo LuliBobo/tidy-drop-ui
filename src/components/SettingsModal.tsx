@@ -6,6 +6,49 @@ import { Switch } from './ui/switch';
 import { Folder } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Check if running in web build environment
+const isWebBuild = import.meta.env.VITE_IS_WEB_BUILD === 'true';
+
+// Define types for Electron API
+type ElectronApiType = {
+  app: {
+    openFolder: (path: string) => Promise<boolean>;
+    showItemInFolder: (path: string) => Promise<void>;
+    getPath: (type: string) => string;
+  };
+  ipcRenderer: {
+    invoke: <T = unknown>(channel: string, ...args: unknown[]) => Promise<T>;
+  };
+};
+
+// Dummy functions to replace Electron API calls
+const electronAPI: ElectronApiType = {
+  app: {
+    openFolder: async (path: string): Promise<boolean> => {
+      console.log('openFolder not available in web version', path);
+      return false;
+    },
+    showItemInFolder: async (path: string): Promise<void> => {
+      console.log('showItemInFolder not available in web version', path);
+    },
+    getPath: (type: string): string => {
+      console.log('getPath not available in web version', type);
+      return '/';
+    }
+  },
+  ipcRenderer: {
+    invoke: async <T = unknown>(channel: string, ...args: unknown[]): Promise<T> => {
+      console.log(`ipcRenderer.invoke not available in web: ${channel}`, args);
+      return null as unknown as T;
+    }
+  }
+};
+
+// Helper function to safely access Electron APIs
+const getElectron = () => {
+  return isWebBuild ? electronAPI : window.electron;
+};
+
 interface SettingsProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,11 +78,24 @@ export const SettingsModal: React.FC<SettingsProps> = ({
 
   const handleSave = async () => {
     try {
-      // Save the settings to config file via IPC
-      await window.electron.ipcRenderer.invoke('save-settings', {
-        outputDir: tempOutputDir,
-        autoOpenFolder: tempAutoOpenFolder
-      });
+      if (isWebBuild) {
+        // Web version - store in localStorage
+        try {
+          localStorage.setItem('droptidy-settings', JSON.stringify({
+            outputDir: tempOutputDir,
+            autoOpenFolder: tempAutoOpenFolder
+          }));
+        } catch (e) {
+          console.error('Failed to save settings to localStorage:', e);
+          throw e; // Re-throw to be caught by outer try-catch
+        }
+      } else {
+        // Electron version - save via IPC
+        await getElectron().ipcRenderer.invoke('save-settings', {
+          outputDir: tempOutputDir,
+          autoOpenFolder: tempAutoOpenFolder
+        });
+      }
       
       // Update parent state
       setOutputDir(tempOutputDir);
@@ -64,7 +120,20 @@ export const SettingsModal: React.FC<SettingsProps> = ({
 
   const handleSelectFolder = async () => {
     try {
-      const selectedPath = await window.electron.ipcRenderer.invoke('select-directory');
+      if (isWebBuild) {
+        // Web version - show toast and use mock path
+        toast({
+          title: "Web Version Limitation",
+          description: "Folder selection is only available in the desktop app. Using default location.",
+          variant: "default"
+        });
+        setTempOutputDir("/Downloads/DropTidy");
+        return;
+      }
+
+      // Electron version - use direct API call
+      const selectedPath = await getElectron().ipcRenderer.invoke<string | null>('select-directory');
+      
       if (selectedPath) {
         setTempOutputDir(selectedPath);
       }
@@ -95,9 +164,11 @@ export const SettingsModal: React.FC<SettingsProps> = ({
                 variant="outline" 
                 size="icon" 
                 onClick={handleSelectFolder} 
+                disabled={isWebBuild}
                 aria-label="Select output directory"
+                title={isWebBuild ? "Not available in web version" : "Select output directory"}
               >
-                <Folder className="h-4 w-4" />
+                <Folder className={`h-4 w-4 ${isWebBuild ? "opacity-50" : ""}`} />
               </Button>
             </div>
           </div>
