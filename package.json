@@ -14,7 +14,7 @@
     "start": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on tcp:5173 && cross-env NODE_ENV=development NODE_OPTIONS='--no-deprecation' electron .\"",
     "prepare:web": "node prepare-web-build.js",
-    "prepare:netlify": "node prepare-netlify-env.js",
+    "prepare:netlify": "node --experimental-modules prepare-netlify-env.js",
     "build:web": "npm run prepare:web && cross-env VITE_IS_WEB_BUILD=true tsc && cross-env VITE_IS_WEB_BUILD=true vite build",
     "restore:backups": "node restore-backups.js",
     "dev:web": "cross-env VITE_IS_WEB_BUILD=true vite",
