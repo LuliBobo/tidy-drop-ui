@@ -14,7 +14,52 @@ import SettingsModal from './SettingsModal';
 import UpgradeModal from './UpgradeModal';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
-import { openFolder } from './ElectronFallbacks';
+// Web-compatible Electron fallbacks directly in component
+const openFolder = async (folderPath: string): Promise<void> => {
+  if (isWebBuild) {
+    toast({
+      title: "Web Version",
+      description: "Opening folders is only available in the desktop app",
+      variant: "default"
+    });
+    return;
+  }
+  
+  try {
+    // Try to use the Electron API if available
+    await getElectron().app.openFolder(folderPath);
+  } catch (error) {
+    console.error("Error opening folder:", error);
+    toast({
+      title: "Error",
+      description: "Failed to open folder",
+      variant: "destructive"
+    });
+  }
+};
+
+const showItemInFolder = async (filePath: string): Promise<void> => {
+  if (isWebBuild) {
+    toast({
+      title: "Web Version",
+      description: "Showing files in folder is only available in the desktop app",
+      variant: "default"
+    });
+    return;
+  }
+  
+  try {
+    // Try to use the Electron API if available
+    await getElectron().app.showItemInFolder(filePath);
+  } catch (error) {
+    console.error("Error showing item in folder:", error);
+    toast({
+      title: "Error",
+      description: "Failed to show item in folder",
+      variant: "destructive"
+    });
+  }
+};
 
 import type { CleanResult } from '@/types/electron';
 
@@ -320,7 +365,7 @@ export const FileCleaner: React.FC = () => {
       }
 
       if (zipPath && zipPath.length > 0) {
-        const { showItemInFolder } = await import('@/components/ElectronFallbacks');
+        // Use the local showItemInFolder function
         await showItemInFolder(zipPath);
       }
     } catch (error) {
@@ -338,7 +383,7 @@ export const FileCleaner: React.FC = () => {
 
   const handleOpenOutputFolder = useCallback(async () => {
     // Import and use the safer approach with proper type safety
-    const { openFolder } = await import('@/components/ElectronFallbacks');
+    // Use the local openFolder function
     await openFolder(outputDir);
   }, [outputDir]);
 

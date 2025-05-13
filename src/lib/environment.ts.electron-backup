@@ -1,7 +1,7 @@
 /**
- * Environment Detection Utility for Web and Electron
+ * Environment Detection Utility
  * 
- * This module provides utility functions to detect the current environment
+ * This module provides utility functions to detect the current environment (Electron vs web browser)
  * and safely invoke Electron IPC methods with fallbacks for web contexts.
  */
  
@@ -27,7 +27,7 @@ export function isElectron(): boolean {
   }
 
   // Otherwise check for window.electron
-  return typeof window !== 'undefined' && window.electron !== undefined;
+  return window.electron !== undefined;
 }
 
 /**
@@ -89,12 +89,11 @@ export async function safeIpcInvoke<T = unknown>(
   try {
     // Check if we're in Electron
     if (isElectron()) {
-      // In Electron, use IPC
-      const result = await window.electron.ipcRenderer.invoke(channel, ...args);
-      return result as T;
+      return await window.electron.ipcRenderer.invoke(channel, ...args) as T;
     } else {
-      // In web context, use the provided fallback function
+      // Web environment
       if (webFallback && typeof webFallback === 'function') {
+        // In web context, use the provided fallback function
         return await webFallback();
       } else {
         console.warn(`IPC call "${channel}" ignored in web environment and no fallback provided`);
@@ -119,34 +118,20 @@ export function safeIpcOn<T = unknown>(
   channel: string,
   listener: (event: IpcRendererEvent, data: T) => void
 ): CleanupFunction {
-  // No-op function for web environment
-  const noop = () => { /* no-op */ };
-  
   // Check if we're in Electron
-  if (isElectron() && window.electron && window.electron.ipcRenderer) {
-    try {
-      // Register the event listener using a safe method
-      const ipcRenderer = window.electron.ipcRenderer;
-      // Use any available method to register a listener
-      if (typeof ipcRenderer.on === 'function') {
-        ipcRenderer.on(channel, listener);
-        
-        // Return cleanup function
-        return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
-        };
-      }
-    } catch (error) {
-      console.error(`Error registering IPC listener for "${channel}":`, error);
-    }
+  if (isElectron()) {
+    // Register the event listener
+    window.electron.ipcRenderer.on(channel, listener);
+    
+    // Return cleanup function
+    return () => {
+      window.electron.ipcRenderer.removeListener(channel, listener);
+    };
   } else {
     // In web environment, return a no-op cleanup function
     console.debug(`IPC listener for "${channel}" not registered in web environment`);
+    return () => { /* no-op */ };
   }
-  
-  return noop;
 }
 
 /**
@@ -161,31 +146,18 @@ export function safeIpcOnce<T = unknown>(
   channel: string,
   listener: (event: IpcRendererEvent, data: T) => void
 ): CleanupFunction {
-  // No-op function for web environment
-  const noop = () => { /* no-op */ };
-  
   // Check if we're in Electron
-  if (isElectron() && window.electron && window.electron.ipcRenderer) {
-    try {
-      // Register the one-time event listener
-      const ipcRenderer = window.electron.ipcRenderer;
-      if (typeof ipcRenderer.once === 'function') {
-        ipcRenderer.once(channel, listener);
-        
-        // Return cleanup function
-        return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
-        };
-      }
-    } catch (error) {
-      console.error(`Error registering one-time IPC listener for "${channel}":`, error);
-    }
+  if (isElectron()) {
+    // Register the one-time event listener
+    window.electron.ipcRenderer.once(channel, listener);
+    
+    // Return cleanup function
+    return () => {
+      window.electron.ipcRenderer.removeListener(channel, listener);
+    };
   } else {
     // In web environment, return a no-op cleanup function
     console.debug(`One-time IPC listener for "${channel}" not registered in web environment`);
+    return () => { /* no-op */ };
   }
-  
-  return noop;
 }

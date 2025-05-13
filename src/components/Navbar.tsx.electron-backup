@@ -32,9 +32,11 @@ function getPreferredTheme(): Theme {
   if (typeof window === "undefined") return "light";
 
   try {
-// Check for web build first
-if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-  // In web builds, always use localStorage or system preference
+    // Check for web build first
+    if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+   {
+}
+      // In web builds, always use localStorage or system preference
       const storedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
       if (storedTheme === "light" || storedTheme === "dark") {
         return storedTheme;
@@ -92,12 +94,16 @@ const Navbar = () => {
   useEffect(() => {
     // Check if we're in Electron
     const detectEnvironment = async () => {
-// First check for explicit web build flag (most reliable)
-if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-  setIsElectronEnv(false);
-  return;
+      // First check for explicit web build flag (most reliable)
+      if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
+   {
 }
-const electronEnv = isElectron();
+        setIsElectronEnv(false);
+        return;
+      }
+      
+      // Otherwise use our utility
+      const electronEnv = isElectron();
       setIsElectronEnv(electronEnv);
       
       // Log environment for debugging
@@ -263,19 +269,7 @@ const electronEnv = isElectron();
             <Button 
               variant="outline" 
               className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
-              onClick={() => {
-                // Safe way to call electron APIs
-                if (window.electron && typeof window.electron === 'object') {
-                  try {
-                    // Attempt to call the API in a safe way
-                    if (window.electron.ipcRenderer && window.electron.ipcRenderer.invoke) {
-                      window.electron.ipcRenderer.invoke('select-directory');
-                    }
-                  } catch (e) {
-                    console.error('Failed to open file dialog:', e);
-                  }
-                }
-              }}
+              onClick={() => window.electron?.app.openFolder('/')}
             >
               Open Files
             </Button>

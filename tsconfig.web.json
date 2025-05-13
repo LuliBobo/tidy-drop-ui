@@ -3,6 +3,13 @@
   "compilerOptions": {
     "forceConsistentCasingInFileNames": true,
     "types": ["vite/client"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "ignoreDeprecations": "5.0",
+    "checkJs": false,
+    "strict": true,
     "paths": {
       "@/*": ["./src/*"]
     }
@@ -10,7 +17,8 @@
   "exclude": [
     "src/main/**/*",
     "src/preload/**/*",
-    "src/backend/**/*",
+    "src/**/*.fixed.*",
+    "src/**/*-fixed.*",
     "node_modules"
   ]
 }

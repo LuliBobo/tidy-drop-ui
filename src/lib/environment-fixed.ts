@@ -1,14 +1,14 @@
 /**
- * Environment Detection Utility for Web and Electron
+ * Environment Detection Utility
  * 
- * This module provides utility functions to detect the current environment
+ * This module provides utility functions to detect the current environment (Electron vs web browser)
  * and safely invoke Electron IPC methods with fallbacks for web contexts.
  */
  
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Import type only, not the actual module
-import type { IpcRendererEvent } from 'electron';
+// WEB BUILD: Electron import removed for web deployment
 
 /**
  * Type definition for a cleanup function that removes event listeners
@@ -27,7 +27,7 @@ export function isElectron(): boolean {
   }
 
   // Otherwise check for window.electron
-  return typeof window !== 'undefined' && window.electron !== undefined;
+  return window.electron !== undefined;
 }
 
 /**
@@ -81,20 +81,19 @@ export async function importElectron<T = any>(moduleName: string, suppressLog = 
  * @param {Function} webFallback - Optional fallback function to call in web environments
  * @returns {Promise<T>} Result from IPC call or fallback
  */
-export async function safeIpcInvoke<T = unknown>(
+export async function safeIpcInvoke<T = unknown, Args extends readonly unknown[] = readonly unknown[]>(
   channel: string,
-  args: unknown[] = [],
+  args: Args = [] as unknown as Args,
   webFallback?: () => Promise<T>
 ): Promise<T | undefined> {
   try {
     // Check if we're in Electron
     if (isElectron()) {
-      // In Electron, use IPC
-      const result = await window.electron.ipcRenderer.invoke(channel, ...args);
-      return result as T;
+      return await window.electron?.ipcRenderer?.invoke(channel, ...args) as T;
     } else {
-      // In web context, use the provided fallback function
+      // Web environment
       if (webFallback && typeof webFallback === 'function') {
+        // In web context, use the provided fallback function
         return await webFallback();
       } else {
         console.warn(`IPC call "${channel}" ignored in web environment and no fallback provided`);
@@ -105,6 +104,15 @@ export async function safeIpcInvoke<T = unknown>(
     console.error(`Error in safeIpcInvoke for channel "${channel}":`, error);
     return undefined;
   }
+}
+
+/**
+ * Type definition for Electron IPC event
+ */
+interface IpcRendererEvent {
+  preventDefault: () => void;
+  sender: unknown;
+  returnValue: unknown;
 }
 
 /**
@@ -119,73 +127,40 @@ export function safeIpcOn<T = unknown>(
   channel: string,
   listener: (event: IpcRendererEvent, data: T) => void
 ): CleanupFunction {
-  // No-op function for web environment
-  const noop = () => { /* no-op */ };
-  
   // Check if we're in Electron
-  if (isElectron() && window.electron && window.electron.ipcRenderer) {
-    try {
-      // Register the event listener using a safe method
-      const ipcRenderer = window.electron.ipcRenderer;
-      // Use any available method to register a listener
-      if (typeof ipcRenderer.on === 'function') {
-        ipcRenderer.on(channel, listener);
-        
-        // Return cleanup function
-        return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
-        };
-      }
-    } catch (error) {
-      console.error(`Error registering IPC listener for "${channel}":`, error);
-    }
+  if (isElectron()) {
+    // Register the event listener using invoke API
+    const electronApi = window.electron?.ipcRenderer as any;
+    electronApi?.on(channel, listener);
+    
+    // Return cleanup function
+    return () => {
+      (window.electron?.ipcRenderer as any)?.removeListener(channel, listener);
+    };
   } else {
     // In web environment, return a no-op cleanup function
     console.debug(`IPC listener for "${channel}" not registered in web environment`);
+    return () => { /* no-op */ };
   }
-  
-  return noop;
 }
 
-/**
- * Safely registers a one-time IPC event listener
- * In web environments, logs a message and returns a no-op cleanup function
- * 
- * @param {string} channel - The IPC channel to listen on
- * @param {Function} listener - Event listener callback
- * @returns {CleanupFunction} Function to remove the event listener if it hasn't fired yet
- */
 export function safeIpcOnce<T = unknown>(
   channel: string,
   listener: (event: IpcRendererEvent, data: T) => void
 ): CleanupFunction {
-  // No-op function for web environment
-  const noop = () => { /* no-op */ };
-  
   // Check if we're in Electron
-  if (isElectron() && window.electron && window.electron.ipcRenderer) {
-    try {
-      // Register the one-time event listener
-      const ipcRenderer = window.electron.ipcRenderer;
-      if (typeof ipcRenderer.once === 'function') {
-        ipcRenderer.once(channel, listener);
-        
-        // Return cleanup function
-        return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
-        };
-      }
-    } catch (error) {
-      console.error(`Error registering one-time IPC listener for "${channel}":`, error);
-    }
+  if (isElectron()) {
+    // Register the one-time event listener
+    const electronApi = window.electron?.ipcRenderer as any;
+    electronApi?.once(channel, listener);
+    
+    // Return cleanup function
+    return () => {
+      (window.electron?.ipcRenderer as any)?.removeListener(channel, listener);
+    };
   } else {
     // In web environment, return a no-op cleanup function
     console.debug(`One-time IPC listener for "${channel}" not registered in web environment`);
+    return () => { /* no-op */ };
   }
-  
-  return noop;
 }

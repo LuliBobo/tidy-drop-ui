@@ -2,6 +2,9 @@
  * Web-compatible logger implementation
  */
 
+// Web-compatible imports
+import * as path from 'path-browserify';
+
 // Define log interfaces
 interface CleaningLogEntry {
   inputPath: string;
@@ -14,7 +17,7 @@ interface CleaningLogEntry {
 }
 
 // Web-compatible logger
-const electronLog = {
+const webLogger = {
   info: (message: string) => console.info('[INFO]', message),
   warn: (message: string) => console.warn('[WARN]', message),
   error: (message: string) => console.error('[ERROR]', message),
@@ -35,7 +38,7 @@ const electronLog = {
 };
 
 // Export web-compatible logger
-export { electronLog };
+export const electronLog = webLogger;
 
 // Web-compatible log function
 export const appendToCleaningLog = (entry: CleaningLogEntry): void => {

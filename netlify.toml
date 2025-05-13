@@ -8,10 +8,9 @@
   # Command to build the application for web deployment
   # This sequence:
   # 1. Creates environment variables file with VITE_IS_WEB_BUILD=true
-  # 2. Applies our web-specific fixes to problematic files
-  # 3. Runs preparation script to modify Electron-specific code
-  # 4. Builds the application for web deployment
-  command = "node prepare-netlify-env.cjs && export VITE_IS_WEB_BUILD=true && node apply-web-fixes.js && npm run prepare:web && npm run build:web"
+  # 2. Runs preparation script to modify Electron-specific code
+  # 3. Builds the application for web deployment
+  command = "node prepare-netlify-env.cjs && npm run prepare:web && npm run build:web"
   
   # Directory that contains the built web application
   # This should match the 'outDir' setting in vite.config.ts

@@ -81,16 +81,16 @@ export async function importElectron<T = any>(moduleName: string, suppressLog = 
  * @param {Function} webFallback - Optional fallback function to call in web environments
  * @returns {Promise<T>} Result from IPC call or fallback
  */
-export async function safeIpcInvoke<T = unknown>(
+export async function safeIpcInvoke<T = unknown, Args extends readonly unknown[] = readonly unknown[]>(
   channel: string,
-  args: unknown[] = [],
+  args: Args = [] as unknown as Args,
   webFallback?: () => Promise<T>
 ): Promise<T | undefined> {
   try {
     // Check if we're in Electron
     if (isElectron()) {
       // In Electron, use IPC
-      const result = await window.electron.ipcRenderer.invoke(channel, ...args);
+      const result = await window.electron.ipcRenderer.invoke(channel, ...(args as unknown[]));
       return result as T;
     } else {
       // In web context, use the provided fallback function
@@ -125,19 +125,14 @@ export function safeIpcOn<T = unknown>(
   // Check if we're in Electron
   if (isElectron() && window.electron && window.electron.ipcRenderer) {
     try {
-      // Register the event listener using a safe method
-      const ipcRenderer = window.electron.ipcRenderer;
-      // Use any available method to register a listener
-      if (typeof ipcRenderer.on === 'function') {
-        ipcRenderer.on(channel, listener);
-        
-        // Return cleanup function
-        return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
-        };
-      }
+      // Register the event listener using the available API
+      window.electron.ipcRenderer.on(channel, listener);
+      
+      // Return cleanup function
+      return () => {
+        // Remove the listener using the available API
+        window.electron.ipcRenderer.off(channel, listener);
+      };
     } catch (error) {
       console.error(`Error registering IPC listener for "${channel}":`, error);
     }
@@ -171,19 +166,16 @@ export function safeIpcOnce<T = unknown>(
       const ipcRenderer = window.electron.ipcRenderer;
       if (typeof ipcRenderer.once === 'function') {
         ipcRenderer.once(channel, listener);
-        
         // Return cleanup function
         return () => {
-          if (typeof ipcRenderer.removeListener === 'function') {
-            ipcRenderer.removeListener(channel, listener);
-          }
+        // Return cleanup function
+        return () => {
+          ipcRenderer.off(channel, listener);
         };
-      }
-    } catch (error) {
       console.error(`Error registering one-time IPC listener for "${channel}":`, error);
     }
   } else {
-    // In web environment, return a no-op cleanup function
+    // In web environment, log debug message
     console.debug(`One-time IPC listener for "${channel}" not registered in web environment`);
   }
   
