@@ -24,7 +24,8 @@ const __dirname = path.dirname(__filename);
 // Files to fix mapping (source → destination)
 const fixedFiles = {
   'src/backend/cleaner.fixed.ts': 'src/backend/cleaner.ts',
-  'src/backend/logger.fixed.ts': 'src/backend/logger.ts'
+  'src/backend/logger.fixed.ts': 'src/backend/logger.ts',
+  'src/components/ElectronFallbacks.fixed.tsx': 'src/components/ElectronFallbacks.tsx'
 };
 
 // Check if we're in a web build
