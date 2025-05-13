@@ -5,17 +5,9 @@
  * during web deployment. It helps maintain TypeScript integrity by providing
  * proper function signatures and behavior.
  * 
- * @example
- * // Instead of:
- * if (isElectron()) {
- *   window.electron?.app.openFolder(path);
- * } else {
- *   // Empty or incomplete code
- * }
- * 
- * // Use:
- * import { openFolder } from './ElectronFallbacks';
- * await openFolder(path);
+ * Example usage:
+ * Import functions from this module instead of using direct Electron API calls.
+ * This allows your code to gracefully handle both Electron and web environments.
  */
 
 import { toast } from '@/hooks/use-toast';
@@ -86,7 +78,7 @@ export async function openFolder(folderPath: string): Promise<void> {
   
   try {
     await getElectron().app.openFolder(folderPath);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error opening folder:", error);
     toast({
       title: "Error",
@@ -112,7 +104,7 @@ export async function showItemInFolder(filePath: string): Promise<void> {
   
   try {
     await getElectron().app.showItemInFolder(filePath);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error showing item in folder:", error);
     toast({
       title: "Error",
@@ -126,7 +118,7 @@ export async function showItemInFolder(filePath: string): Promise<void> {
  * Gets a path from the system
  * Falls back to a reasonable default in web environment
  */
-export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downloads' | 'documents' | string): string {
+export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downloads' | 'documents' | 'desktop' | 'pictures' | 'videos'): string {
   if (isWebBuild) {
     const webFallbacks: Record<string, string> = {
       'home': '/home',
@@ -134,15 +126,18 @@ export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downlo
       'userData': '/userData',
       'temp': '/temp',
       'downloads': '/downloads',
-      'documents': '/documents'
+      'documents': '/documents',
+      'desktop': '/desktop',
+      'pictures': '/pictures',
+      'videos': '/videos'
     };
     
     return webFallbacks[name] || '/';
   }
   
   try {
-    return getElectron().app.getPath(name as string) || '/';
-  } catch (error) {
+    return getElectron().app.getPath(name) || '/';
+  } catch (error: unknown) {
     console.error(`Error getting path for ${name}:`, error);
     return '/';
   }
@@ -152,59 +147,74 @@ export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downlo
  * Selects a directory using system file dialog
  * Falls back to a toast message and default path in web environment
  */
-export async function selectDirectory(defaultPath?: string): Promise<string | null> {
-  return await safeIpcInvoke<string | null>(
-    'select-directory',
-    [defaultPath],
-    async () => {
-      toast({
-        title: "Web Version Limitation",
-        description: "Directory selection is only available in the desktop app",
-        variant: "default"
-      });
-      return null;
-    }
-  );
+export async function selectDirectory(): Promise<string | null> {
+  if (isWebBuild) {
+    toast({
+      title: "Web Version Limitation",
+      description: "Directory selection is only available in the desktop app",
+      variant: "default"
+    });
+    return null;
+  }
+
+  try {
+    return await getElectron().ipcRenderer.invoke('select-directory');
+  } catch (error: unknown) {
+    console.error("Error selecting directory:", error);
+    return null;
+  }
 }
 
 /**
  * Loads settings from storage
  * Uses localStorage in web environment
  */
-export async function loadSettings<T extends Record<string, any>>(defaultSettings: T): Promise<T> {
-  return await safeIpcInvoke<T>(
-    'load-settings',
-    [],
-    async () => {
-      try {
-        const stored = localStorage.getItem('droptidy-settings');
-        if (stored) {
-          return JSON.parse(stored) as T;
-        }
-      } catch (e) {
-        console.error('Failed to load settings from localStorage:', e);
+export async function loadSettings<T extends Record<string, unknown>>(defaultSettings: T): Promise<T> {
+  if (isWebBuild) {
+    try {
+      const stored = localStorage.getItem('droptidy-settings');
+      if (stored) {
+        return JSON.parse(stored) as T;
       }
-      return defaultSettings;
+    } catch (e: unknown) {
+      console.error('Failed to load settings from localStorage:', e);
     }
-  ) || defaultSettings;
+    return defaultSettings;
+  } 
+  
+  try {
+    const settings = await getElectron().ipcRenderer.invoke('load-settings') as unknown as T;
+    return settings || defaultSettings;
+  } catch (error: unknown) {
+    console.error('Failed to load settings:', error);
+    return defaultSettings;
+  }
 }
 
 /**
  * Saves settings to storage
  * Uses localStorage in web environment
  */
-export async function saveSettings<T extends Record<string, any>>(settings: T): Promise<boolean> {
-  return await safeIpcInvoke<boolean>(
-    'save-settings',
-    [settings],
-    async () => {
-      try {
-        localStorage.setItem('droptidy-settings', JSON.stringify(settings));
-        return true;
-      } catch (e) {
-        console.error('Failed to save settings to localStorage:', e);
-        return false;
-      }
+export async function saveSettings<T extends Record<string, unknown>>(settings: T): Promise<boolean> {
+  if (isWebBuild) {
+    try {
+      localStorage.setItem('droptidy-settings', JSON.stringify(settings));
+      return true;
+    } catch (e: unknown) {
+      console.error('Failed to save settings to localStorage:', e);
+      return false;
     }
-  ) || false;
+  }
+  
+  try {
+    // Type casting to match the expected interface
+    const settingsToSave = {
+      outputDir: (settings as Record<string, unknown>).outputDir as string || '',
+      autoOpenFolder: (settings as Record<string, unknown>).autoOpenFolder as boolean || false
+    };
+    return await getElectron().ipcRenderer.invoke('save-settings', settingsToSave) as boolean;
+  } catch (error: unknown) {
+    console.error('Failed to save settings:', error);
+    return false;
+  }
 }
