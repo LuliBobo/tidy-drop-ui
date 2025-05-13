@@ -1,18 +1,23 @@
-// ES Module version of prepare-netlify-env.js
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+#!/usr/bin/env node
 
-// Get the directory name in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/**
+ * Netlify Build Environment Preparation Script
+ * 
+ * This script creates a .env file for Netlify builds that sets
+ * VITE_IS_WEB_BUILD=true to ensure proper environment detection.
+ * 
+ * This script should be run as part of the Netlify build process,
+ * before the main build command.
+ */
 
-// Create .env file for Netlify build if it doesn't exist
-try {
-  const envPath = path.join(__dirname, '.env');
-  
-  // Set environment variables
-  const envContent = `# Environment variables for Netlify web build
+const fs = require('fs');
+const path = require('path');
+
+// Path to the .env file
+const envFilePath = path.join(process.cwd(), '.env');
+
+// Content to write to the .env file
+const envContent = `# Environment variables for Netlify web build
 VITE_IS_WEB_BUILD=true
 VITE_APP_API_KEY=${process.env.VITE_APP_API_KEY || ''}
 VITE_APP_AUTH_DOMAIN=${process.env.VITE_APP_AUTH_DOMAIN || ''}
@@ -25,8 +30,12 @@ VITE_APP_APP_ID=${process.env.VITE_APP_APP_ID || ''}
 # Any changes to this file will be overwritten on the next build
 `;
 
-  fs.writeFileSync(envPath, envContent);
+try {
+  // Write the .env file
+  fs.writeFileSync(envFilePath, envContent);
   console.log('✅ Successfully created .env file for Netlify build');
+  
+  // Also log to the console for Netlify logs
   console.log('Environment variables set:');
   console.log('- VITE_IS_WEB_BUILD=true');
   console.log('- Firebase configuration variables');
