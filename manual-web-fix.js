@@ -20,12 +20,31 @@ const filesToReplace = [
     fixedPath: 'fixed-files/environment.ts'
   },
   {
+    path: 'src/lib/environment.web.ts',
+    fixedPath: 'fixed-files/environment.web.ts'
+  },
+  {
     path: 'src/components/Navbar.tsx',
     fixedPath: 'fixed-files/Navbar.tsx'
   },
   {
     path: 'src/components/FileCleaner.tsx',
     fixedPath: 'fixed-files/FileCleaner.tsx'
+  },
+  {
+    path: 'src/components/ElectronFallbacks.tsx',
+    fixedPath: 'fixed-files/ElectronFallbacks.tsx',
+    optional: true
+  },
+  {
+    path: 'src/backend/cleaner.ts',
+    fixedPath: 'fixed-files/cleaner.ts',
+    optional: true
+  },
+  {
+    path: 'src/backend/logger.ts',
+    fixedPath: 'fixed-files/logger.ts',
+    optional: true
   }
 ];
 
@@ -44,8 +63,13 @@ for (const file of filesToReplace) {
     
     // Check if fixed file exists
     if (!fs.existsSync(fixedPath)) {
-      console.error(`Fixed file not found: ${fixedPath}`);
-      continue;
+      if (file.optional) {
+        console.log(`Optional fixed file not found (skipping): ${fixedPath}`);
+        continue;
+      } else {
+        console.error(`Required fixed file not found: ${fixedPath}`);
+        continue;
+      }
     }
     
     // Read and write fixed content
