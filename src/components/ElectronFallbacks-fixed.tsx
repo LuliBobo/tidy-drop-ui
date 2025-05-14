@@ -78,7 +78,7 @@ export async function openFolder(folderPath: string): Promise<void> {
   
   try {
     // Web-safe implementation
-    await electronAPI./* WEB BUILD: Disabled Electron API */ (()=>undefined)(folderPath);
+    await electronAPI.app.openFolder(folderPath);
   } catch (error: unknown) {
     console.error("Error opening folder:", error);
     toast({
@@ -105,7 +105,7 @@ export async function showItemInFolder(filePath: string): Promise<void> {
   
   try {
     // Web-safe implementation
-    await electronAPI./* WEB BUILD: Disabled Electron API */ (()=>undefined)(filePath);
+    await electronAPI.app.showItemInFolder(filePath);
   } catch (error: unknown) {
     console.error("Error showing item in folder:", error);
     toast({
@@ -139,7 +139,7 @@ export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downlo
   
   try {
     // Web-safe implementation
-    return electronAPI./* WEB BUILD: Disabled Electron API */ (()=>undefined)(name) || '/';
+    return electronAPI.app.getPath(name) || '/';
   } catch (error: unknown) {
     console.error(`Error getting path for ${name}:`, error);
     return '/';

@@ -78,8 +78,8 @@ export async function openFolder(folderPath: string): Promise<void> {
   
   try {
     // Web-safe implementation
-    console.log('Opening folder:', folderPath);
-  } catch (error) {
+    await electronAPI.app.openFolder(folderPath);
+  } catch (error: unknown) {
     console.error("Error opening folder:", error);
     toast({
       title: "Error",
@@ -105,8 +105,8 @@ export async function showItemInFolder(filePath: string): Promise<void> {
   
   try {
     // Web-safe implementation
-    console.log('Showing item in folder:', filePath);
-  } catch (error) {
+    await electronAPI.app.showItemInFolder(filePath);
+  } catch (error: unknown) {
     console.error("Error showing item in folder:", error);
     toast({
       title: "Error",
@@ -140,7 +140,7 @@ export function getPath(name: 'home' | 'appData' | 'userData' | 'temp' | 'downlo
   try {
     // Web-safe implementation
     return electronAPI.app.getPath(name) || '/';
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error getting path for ${name}:`, error);
     return '/';
   }
@@ -162,7 +162,7 @@ export async function selectDirectory(): Promise<string | null> {
 
   try {
     return await getElectron().ipcRenderer.invoke('select-directory');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error selecting directory:", error);
     return null;
   }
@@ -179,7 +179,7 @@ export async function loadSettings<T extends Record<string, unknown>>(defaultSet
       if (stored) {
         return JSON.parse(stored) as T;
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Failed to load settings from localStorage:', e);
     }
     return defaultSettings;
@@ -188,7 +188,7 @@ export async function loadSettings<T extends Record<string, unknown>>(defaultSet
   try {
     const settings = await getElectron().ipcRenderer.invoke('load-settings') as unknown as T;
     return settings || defaultSettings;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to load settings:', error);
     return defaultSettings;
   }
@@ -203,7 +203,7 @@ export async function saveSettings<T extends Record<string, unknown>>(settings: 
     try {
       localStorage.setItem('droptidy-settings', JSON.stringify(settings));
       return true;
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Failed to save settings to localStorage:', e);
       return false;
     }
@@ -216,7 +216,7 @@ export async function saveSettings<T extends Record<string, unknown>>(settings: 
       autoOpenFolder: (settings as Record<string, unknown>).autoOpenFolder as boolean || false
     };
     return await getElectron().ipcRenderer.invoke('save-settings', settingsToSave) as boolean;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to save settings:', error);
     return false;
   }
