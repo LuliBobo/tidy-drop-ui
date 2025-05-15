@@ -12,7 +12,7 @@
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const feedbackFunction = require('./netlify/functions/feedback');
+const feedbackFunction = require('./netlify/functions/feedback_handler');
 
 // Create a valid test request
 const validRequestEvent = {

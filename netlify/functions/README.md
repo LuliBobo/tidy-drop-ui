@@ -11,7 +11,7 @@ Handles user feedback submissions from the web application.
 #### Endpoint
 
 ```
-POST /.netlify/functions/feedback
+POST /.netlify/functions/feedback_handler
 ```
 
 #### Request Body

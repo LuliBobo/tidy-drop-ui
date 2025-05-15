@@ -56,7 +56,7 @@ https://your-site-name.netlify.app/.netlify/functions/function-name
 For example, the feedback function will be at:
 
 ```
-https://your-site-name.netlify.app/.netlify/functions/feedback
+https://your-site-name.netlify.app/.netlify/functions/feedback_handler
 ```
 
 ### Testing Deployed Functions
@@ -66,7 +66,7 @@ You can test the deployed functions using curl or any API testing tool:
 ```bash
 # Test the feedback function
 curl -X POST \
-  https://your-site-name.netlify.app/.netlify/functions/feedback \
+  https://your-site-name.netlify.app/.netlify/functions/feedback_handler \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Test User",

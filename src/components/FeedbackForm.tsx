@@ -106,7 +106,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         try {
           console.log('Using web implementation for feedback submission');
           // In a web environment, call our Netlify serverless function
-          const response = await fetch('/.netlify/functions/feedback', {
+          const response = await fetch('/.netlify/functions/feedback_handler', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -162,7 +162,7 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
         async () => {
           try {
             // In a web environment, call our Netlify serverless function
-            const response = await fetch('/.netlify/functions/feedback', {
+            const response = await fetch('/.netlify/functions/feedback_handler', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'

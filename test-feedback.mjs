@@ -10,7 +10,7 @@
  * and logs the response. It's useful for local testing during development.
  */
 
-import { handler } from './netlify/functions/feedback.js';
+import { handler } from './netlify/functions/feedback_handler.js';
 
 // Create a valid test request
 const validRequestEvent = {
