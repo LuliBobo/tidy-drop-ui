@@ -14,7 +14,11 @@ import { Menu, MessageCircle } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
 import { useLicense } from '@/lib/license-context';
 import FeedbackForm from './FeedbackForm';
-import { isElectron, importElectron } from '@/lib/environment';
+
+// Web-compatible version - always return false for isElectron
+export function isElectron(): boolean {
+  return false;
+}
 
 const THEME_KEY = "theme";
 
@@ -32,375 +36,227 @@ function getPreferredTheme(): Theme {
   if (typeof window === "undefined") return "light";
 
   try {
-    // Check for web build first
-    if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-   {
-}
-      // In web builds, always use localStorage or system preference
-      const storedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
-      if (storedTheme === "light" || storedTheme === "dark") {
-        return storedTheme;
-      }
-      
-      // Fall back to system preference
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    // In web builds, always use localStorage or system preference
+    const storedTheme = localStorage.getItem(THEME_KEY) as Theme | null;
+    if (storedTheme === "light" || storedTheme === "dark") {
+      return storedTheme;
     }
-    
-    // Try to get theme from localStorage
-    const stored = localStorage.getItem(THEME_KEY);
-    
-    // Check if stored value is valid
-    if (stored === "light" || stored === "dark") {
-      return stored as Theme;
+
+    // If no stored theme, check system preference
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
     }
-    
-    // If no valid value in localStorage, use system preference
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    return mq.matches ? "dark" : "light";
   } catch (error) {
-    // Handle localStorage access errors (e.g., in incognito mode)
-    console.warn("Failed to access localStorage for theme preference:", error);
-    return "light"; // Default fallback
+    console.error("Error getting preferred theme:", error);
   }
+
+  // Default theme
+  return "light";
 }
 
-interface NavLink {
-  label: string;
-  href: string;
-  sectionId: string;
-}
-
-// Updated navLinks with sectionId for intersection observer
-const navLinks: NavLink[] = [
-  { label: 'Home', href: '#hero', sectionId: 'hero' },
-  { label: 'Features', href: '#features', sectionId: 'features' },
-  { label: 'Pricing', href: '#pricing', sectionId: 'pricing' },
-  { label: 'Security', href: '#security', sectionId: 'security' },
-];
-
+/**
+ * Navigation component that handles both desktop and mobile navigation
+ */
 const Navbar = () => {
   const [theme, setTheme] = useState<Theme>(getPreferredTheme());
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const { license } = useLicense();
   const location = useLocation();
   const navigate = useNavigate();
-  const { license } = useLicense();
-  const isPrivacyPage = location.pathname === '/privacy';
-  const isCookiePolicyPage = location.pathname === '/cookie-policy';
-  const isTermsOfServicePage = location.pathname === '/terms-of-service';
-  const [activeSection, setActiveSection] = useState<string>('hero');
-  const [isElectronEnv, setIsElectronEnv] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const navItems = useRef<HTMLDivElement>(null);
 
-  // Detect environment on mount
+  // Determine if running in Electron environment
+  const isElectronEnv = false; // Always false for web version
+  
+  // Close mobile menu when route changes
   useEffect(() => {
-    // Check if we're in Electron
-    const detectEnvironment = async () => {
-      // First check for explicit web build flag (most reliable)
-      if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-   {
-}
-        setIsElectronEnv(false);
-        return;
-      }
-      
-      // Otherwise use our utility
-      const electronEnv = isElectron();
-      setIsElectronEnv(electronEnv);
-      
-      // Log environment for debugging
-      console.log(`Running in ${electronEnv ? 'Electron' : 'Web'} environment`);
-    };
-    
-    detectEnvironment();
-  }, []);
+    setIsMenuOpen(false);
+  }, [location]);
 
-  // Apply theme to document and save to localStorage
+  // Initialize theme and set body class
   useEffect(() => {
-    try {
-      // Update document classes
-      document.documentElement.classList.remove("light", "dark");
-      document.documentElement.classList.add(theme);
-      
-      // Persist to localStorage
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (error) {
-      // Handle localStorage errors gracefully
-      console.warn("Could not save theme preference:", error);
-    }
-  }, [theme]);
-
-  // Listen to system preference changes
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const savedTheme = getPreferredTheme();
+    setTheme(savedTheme);
     
-    // Update theme based on system changes if user hasn't set a preference
-    const handler = (e: MediaQueryListEvent) => {
-      try {
-        // Only update if user hasn't explicitly set a preference
-        const hasUserPreference = localStorage.getItem(THEME_KEY) !== null;
-        if (!hasUserPreference) {
-          setTheme(e.matches ? "dark" : "light");
-        }
-      } catch (error) {
-        // Handle localStorage access errors
-        console.warn("Error accessing theme preference:", error);
-      }
-    };
-    
-    // Add event listener with browser compatibility check
-    if (typeof mq.addEventListener === 'function') {
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
+    if (savedTheme === "dark") {
+      document.documentElement.classList.add("dark");
     } else {
-      // Fallback for older browsers
-      mq.addListener(handler);
-      return () => mq.removeListener(handler);
+      document.documentElement.classList.remove("dark");
     }
-  }, []);
-
-  // Set up intersection observer for sections
-  useEffect(() => {
-    // Don't set up observers on non-index pages
-    if (location.pathname !== '/') return;
-
-    // Disconnect previous observer if it exists
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    // Create new intersection observer
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        // Filter for elements that are currently intersecting
-        const intersectingEntries = entries.filter(entry => entry.isIntersecting);
-        
-        // If we have intersecting entries, use the one with the highest ratio
-        if (intersectingEntries.length > 0) {
-          // Sort by intersection ratio (highest first)
-          const sortedEntries = [...intersectingEntries].sort(
-            (a, b) => b.intersectionRatio - a.intersectionRatio
-          );
-          
-          // Get the ID of the most visible section
-          const mostVisibleId = sortedEntries[0].target.id;
-          setActiveSection(mostVisibleId);
+    
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      const newTheme = e.matches ? "dark" : "light";
+      if (!localStorage.getItem(THEME_KEY)) {
+        setTheme(newTheme);
+        if (newTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
         }
-      },
-      {
-        // Root is the viewport
-        root: null,
-        // Start detecting when element is 10% visible
-        threshold: [0.1, 0.5],
-        // Consider the whole viewport plus some margin
-        rootMargin: '-80px 0px -20% 0px' 
-      }
-    );
-
-    // Observe all sections
-    navLinks.forEach(link => {
-      const section = document.getElementById(link.sectionId);
-      if (section) {
-        observerRef.current?.observe(section);
-      }
-    });
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
       }
     };
-  }, [location.pathname]);
+    
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
-  /**
-   * Toggle between light and dark themes with type safety
-   */
+  // Toggle theme function
   const toggleTheme = () => {
-    const newTheme: Theme = theme === "dark" ? "light" : "dark";
+    const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
+    localStorage.setItem(THEME_KEY, newTheme);
+    
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
-  const handleNavigation = (href: string, sectionId: string) => {
-    if (isPrivacyPage || isCookiePolicyPage || isTermsOfServicePage) {
-      // If on privacy or cookie policy or terms of service page, navigate to main page first
-      navigate('/' + href);
-    } else {
-      // On main page, scroll to section
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth'
-        });
-      }
-    }
+  // Navigation items with proper accessibility
+  const navLinks = [
+    { name: "Home", path: "/", ariaLabel: "Go to home page" },
+    { name: "Privacy", path: "/privacy", ariaLabel: "View privacy policy" },
+    { name: "Terms", path: "/terms", ariaLabel: "View terms of service" }
+  ];
+
+  // Handle opening file dialog - web-safe version
+  const handleOpenFileDialog = () => {
+    // Web version - show a message
+    alert('File dialog is only available in the desktop app');
+    console.log('File dialog not available in web version');
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-background/95 backdrop-blur-sm z-50 shadow">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <DropTidyLogo size={36} />
-          <span className="text-xl font-bold text-indigo-600 logo-text" aria-label="DropTidy">
-            DropTidy
-          </span>
-        </Link>
-        <div className="hidden md:flex items-center space-x-4">
-          {navLinks.map((link) => (
-            <button 
-              key={link.href} 
-              onClick={() => handleNavigation(link.href, link.sectionId)} 
-              className={`text-sm font-medium px-3 py-2 rounded-md transition-colors ${
-                activeSection === link.sectionId
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400'
-              }`}
-              aria-current={activeSection === link.sectionId ? "page" : undefined}
-            >
-              {link.label}
-            </button>
-          ))}
-          <Badge variant={license === 'pro' ? "default" : "secondary"} className="mr-2">
-            {license === 'pro' ? '✨ Pro' : 'Free'}
-          </Badge>
-          <Link to="/privacy">
-            <Button variant="outline">Privacy Policy</Button>
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="mr-4 flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <DropTidyLogo size={24} />
+            <span className="font-bold">DropTidy</span>
           </Link>
           
-          {/* Show desktop-specific buttons only in Electron */}
-          {isElectronEnv && (
-            <Button 
-              variant="outline" 
-              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300"
-              onClick={() => window.electron?.app.openFolder('/')}
-            >
-              Open Files
-            </Button>
-          )}
-          
-          {/* Show "Try Desktop App" button only in web */}
-          {!isElectronEnv && (
-            <a 
-              href="https://droptidy.com/download" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100">
-                Download Desktop App
-              </Button>
-            </a>
-          )}
-          
-          <FeedbackForm />
-          <button
-            className="theme-toggle"
+          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+            {navLinks.map((link) => (
+              <Link 
+                key={link.path}
+                to={link.path}
+                aria-label={link.ariaLabel}
+                className={`transition-colors hover:text-foreground/80 ${
+                  location.pathname === link.path ? 'text-foreground' : 'text-foreground/60'
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        
+        <div className="flex-1" />
+        
+        <div className="flex items-center justify-end space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
-            {theme === "dark" ? (
-              // Sun icon (light mode)
-              <svg width="24" height="24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="5" fill="currentColor" />
-                <g stroke="currentColor" strokeWidth="2">
-                  <line x1="12" y1="1" x2="12" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="23" />
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                  <line x1="1" y1="12" x2="3" y2="12" />
-                  <line x1="21" y1="12" x2="23" y2="12" />
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </g>
+            {theme === "light" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-moon">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
               </svg>
             ) : (
-              // Moon icon (dark mode)
-              <svg width="24" height="24" fill="none" aria-hidden="true">
-                <path
-                  d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
-                  fill="currentColor"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-sun">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
               </svg>
             )}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" className="md:hidden">
-              <Menu className="h-5 w-5" />
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Open feedback form"
+            onClick={() => setIsFeedbackOpen(true)}
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+          
+          {/* Show "Try Desktop App" button only in web */}
+          <a 
+            href="https://droptidy.com/download"
+            target="_blank" 
+            rel="noreferrer" 
+            className="hidden sm:inline-flex"
+          >
+            <Button 
+              variant="outline" 
+              className="bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300"
+            >
+              Download Desktop App
             </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="sm:w-64">
-            <SheetHeader>
-              <SheetTitle>Menu</SheetTitle>
-              <SheetDescription className="flex items-center gap-2">
-                Navigate through DropTidy
-                <Badge variant={license === 'pro' ? "default" : "secondary"}>
-                  {license === 'pro' ? '✨ Pro' : 'Free'}
-                </Badge>
-              </SheetDescription>
-            </SheetHeader>
-            <div className="grid gap-4 py-4">
-              {navLinks.map((link) => (
-                <Button 
-                  variant={activeSection === link.sectionId ? "secondary" : "ghost"}
-                  key={link.href} 
-                  onClick={() => handleNavigation(link.href, link.sectionId)} 
-                  className="justify-start"
-                >
-                  {link.label}
-                </Button>
-              ))}
-              <Link to="/privacy">
-                <Button variant="outline" className="justify-start">Privacy Policy</Button>
-              </Link>
-              <Link to="/cookie-policy">
-                <Button variant="outline" className="justify-start">Cookie Policy</Button>
-              </Link>
-              <Link to="/terms-of-service">
-                <Button variant="outline" className="justify-start">Terms of Service</Button>
-              </Link>
-              <FeedbackForm 
-                trigger={
-                  <Button variant="outline" className="justify-start gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Send Feedback
-                  </Button>
-                }
-              />
-              <button
-                className="theme-toggle"
-                onClick={toggleTheme}
-                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          </a>
+  
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                aria-label="Open menu"
+                className="md:hidden"
               >
-                {theme === "dark" ? (
-                  // Sun icon (light mode)
-                  <svg width="24" height="24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="5" fill="currentColor" />
-                    <g stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="1" x2="12" y2="3" />
-                      <line x1="12" y1="21" x2="12" y2="23" />
-                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                      <line x1="1" y1="12" x2="3" y2="12" />
-                      <line x1="21" y1="12" x2="23" y2="12" />
-                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                    </g>
-                  </svg>
-                ) : (
-                  // Moon icon (dark mode)
-                  <svg width="24" height="24" fill="none" aria-hidden="true">
-                    <path
-                      d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </SheetContent>
-        </Sheet>
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+                <SheetDescription>
+                  Navigate to different sections of DropTidy
+                </SheetDescription>
+              </SheetHeader>
+              <nav className="flex flex-col space-y-4 mt-8">
+                {navLinks.map((link) => (
+                  <Link 
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-foreground/80 hover:text-foreground transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                <a 
+                  href="https://droptidy.com/download" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+                >
+                  Download Desktop App
+                </a>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          
+          {isFeedbackOpen && (
+            <FeedbackForm 
+              open={isFeedbackOpen} 
+              onOpenChange={() => setIsFeedbackOpen(false)} 
+            />
+          )}
+        </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

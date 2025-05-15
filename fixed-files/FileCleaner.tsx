@@ -16,14 +16,12 @@ import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
 
 // Check if running in web build environment
-const isWebBuild = true; // Always true for the web version file
-
-// Define types for simulated file operations
+const isWebBuild = true; // Always true for the web version file  // Define types for simulated file operations
 interface CleanResult {
   success: boolean;
   originalSize?: number;
   cleanedSize?: number;
-  metadata?: { [key: string]: string | number };
+  metadata?: { [key: string]: string | number | boolean };
 }
 
 // Web-compatible functions
@@ -89,7 +87,7 @@ interface FileItem {
   outputPath?: string;
   originalSize?: number;
   cleanedSize?: number;
-  metadata?: { [key: string]: string | number };
+  metadata?: { [key: string]: string | number | boolean };
   error?: string;
 }
 

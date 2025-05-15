@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "filePath": "missing-property.ts",
+      "errors": 1
+    },
+    {
+      "filePath": "type-mismatch.ts",
+      "errors": 1
+    },
+    {
+      "filePath": "undefined-variable.ts",
+      "errors": 2
+    },
+    {
+      "filePath": "import-error.ts",
+      "errors": 1
+    },
+    {
+      "filePath": "incompatible-types.ts",
+      "errors": 1
+    }
+  ],
+  "errorTypes": {
+    "2304": 2,
+    "2307": 1,
+    "2322": 1,
+    "2345": 1,
+    "2741": 1
+  },
+  "summary": {
+    "totalErrors": 6
+  }
+}

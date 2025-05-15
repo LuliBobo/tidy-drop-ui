@@ -135,7 +135,7 @@ const Navbar = () => {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <DropTidyLogo className="h-6 w-6" />
+            <DropTidyLogo size={24} />
             <span className="font-bold">DropTidy</span>
           </Link>
           
@@ -250,8 +250,8 @@ const Navbar = () => {
           
           {isFeedbackOpen && (
             <FeedbackForm 
-              isOpen={isFeedbackOpen} 
-              onClose={() => setIsFeedbackOpen(false)} 
+              open={isFeedbackOpen} 
+              onOpenChange={() => setIsFeedbackOpen(false)} 
             />
           )}
         </div>

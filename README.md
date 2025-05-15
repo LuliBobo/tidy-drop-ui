@@ -1,8 +1,8 @@
-# tidy-drop-ui 🚀
+# DropTidy 🚀
 
-A modern, responsive interface built with Vite, React, TypeScript, and Tailwind CSS. Designed for seamless file management, metadata removal, and AI-powered enhancements.
+A modern, cross-platform application built with Vite, React, TypeScript, and Tailwind CSS. Designed for seamless file management, metadata removal, and AI-powered enhancements. Available as both a web application and desktop app with Electron.
 
-![TidyDrop UI Banner](public/tidy-drop-banner.png)
+![DropTidy Banner](public/tidy-drop-banner.png)
 
 ## 🌟 Features
 
@@ -14,7 +14,8 @@ A modern, responsive interface built with Vite, React, TypeScript, and Tailwind 
 - 📱 **Fully Responsive** design
 - 🌙 **Dark Mode** support
 - 🔍 **Type Safe** with TypeScript
-- 🖥️ **Electron Integration** (planned)
+- 🖥️ **Desktop & Web** with unified build system
+- 🔄 **Cross-Platform** compatibility
 
 ## 📸 Screenshots
 
@@ -107,15 +108,57 @@ tidy-drop-ui/
 - 💬 Multilingual support (EN / SK)
 - 🔒 Advanced security settings and privacy modes
 
+## 🚀 Development & Deployment
+
+### Web Development
+
+```bash
+# Start development server (web version)
+npm run dev:web
+
+# Build for web deployment
+npm run build:web:unified
+```
+
+### Desktop Development
+
+```bash
+# Start development with Electron
+npm run electron:dev
+
+# Build Electron app
+npm run build:electron
+```
+
+### Unified Build System
+
+We use a robust unified build system to deploy DropTidy to both web and desktop platforms:
+
+```bash
+# Standard unified web build
+npm run build:web:unified
+
+# Build with advanced TypeScript fixes 
+npm run build:web:unified:advanced
+
+# Deploy to Netlify
+npm run netlify:deploy
+```
+
+For more information, see:
+- [Unified Web Build Guide](UNIFIED-WEB-BUILD.md)
+- [Web Build Quick Guide](WEB-BUILD-QUICKGUIDE.md)
+- [Definitive Netlify Deployment](DEFINITIVE-NETLIFY-DEPLOYMENT.md)
+
 ## 🛤 Roadmap
 
 | Milestone | Status | Target Date |
 |:----------|:-------|:------------|
 | Basic Metadata Removal Tool | ✅ Completed | April 2025 |
 | UI/UX Polish & Dark Mode | ✅ Completed | April 2025 |
+| Cross-Platform Support (Web + Desktop) | ✅ Completed | May 2025 |
 | AI Face Blurring | 🚧 In Progress | May 2025 |
 | Bulk Folder Processing | 📝 Planned | May 2025 |
-| Desktop App (Electron) | 📝 Planned | June 2025 |
 | Smart Auto-Sorting | 📝 Planned | June 2025 |
 
 > *Roadmap is tentative and may change as the project evolves.*

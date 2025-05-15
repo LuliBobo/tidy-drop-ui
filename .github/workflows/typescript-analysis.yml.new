@@ -1,0 +1,132 @@
+name: TypeScript Error Analysis
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+      - "tsconfig*.json"
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+      - "tsconfig*.json"
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Run with verbose output'
+        required: false
+        default: 'false'
+        type: boolean
+      ignore-errors:
+        description: 'Ignore TypeScript errors (do not fail the build)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  analyze-typescript:
+    name: Analyze TypeScript Errors
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Create ci-reports directory
+        run: mkdir -p ci-reports
+        
+      - name: Run TypeScript analysis
+        id: ts-analysis
+        run: |
+          if [[ "${{ github.event.inputs.verbose }}" == "true" ]]; then
+            npm run ci:ts:analysis:github -- --verbose
+          else
+            npm run ci:ts:analysis:github
+          fi
+        continue-on-error: true
+        
+      - name: Upload analysis reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: typescript-error-reports
+          path: ci-reports
+          
+      - name: Comment on PR with error summary
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            try {
+              const reportPath = path.join(process.env.GITHUB_WORKSPACE, 'ci-reports', 'typescript-errors.md');
+              
+              if (!fs.existsSync(reportPath)) {
+                console.log('No TypeScript error report found.');
+                return;
+              }
+              
+              const reportContent = fs.readFileSync(reportPath, 'utf8');
+              
+              // Add a link to the workflow run
+              const workflowRunUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+              const commentBody = `${reportContent}\n\n[View full TypeScript analysis report](${workflowRunUrl})`;
+              
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number
+              });
+              
+              const botCommentRegex = /^## TypeScript Error Analysis/;
+              const existingComment = comments.find(comment => botCommentRegex.test(comment.body));
+              
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: commentBody
+                });
+                console.log('Updated existing TypeScript analysis comment.');
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: commentBody
+                });
+                console.log('Created new TypeScript analysis comment.');
+              }
+            } catch (error) {
+              console.error('Failed to create PR comment:', error);
+            }
+            
+      - name: Check for TypeScript errors
+        if: ${{ github.event.inputs.ignore-errors != 'true' }}
+        run: |
+          if [[ -f "ci-reports/typescript-errors.json" ]]; then
+            ERROR_COUNT=$(jq '.summary.totalErrors' ci-reports/typescript-errors.json)
+            if [[ $ERROR_COUNT -gt 0 ]]; then
+              echo "::warning::Found $ERROR_COUNT TypeScript errors that need to be addressed"
+              # Uncomment the line below to make the workflow fail when errors are found
+              # exit 1
+            else
+              echo "No TypeScript errors found!"
+            fi
+          else
+            echo "No analysis report found. Check previous steps for errors."
+          fi

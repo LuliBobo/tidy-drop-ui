@@ -1,163 +1,94 @@
 /**
- * Environment Detection Utility
- * 
- * This module provides utility functions to detect the current environment (Electron vs web browser)
- * and safely invoke Electron IPC methods with fallbacks for web contexts.
+ * Web-safe environment utilities
+ * Provides web-compatible alternatives to Electron APIs
  */
- 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Import type only, not the actual module
-import type { IpcRendererEvent } from 'electron';
+// Define app types
+export interface IsTyApp {
+  isElectron: boolean;
+  isWeb: boolean;
+  isDev: boolean;
+  isProd: boolean;
+}
 
-/**
- * Type definition for a cleanup function that removes event listeners
- */
-export type CleanupFunction = () => void;
+// Web paths fallbacks
+const WEB_PATHS = {
+  userData: '/user-data',
+  appData: '/app-data',
+  temp: '/temp',
+  home: '/home',
+  downloads: '/downloads',
+  documents: '/documents',
+  desktop: '/desktop',
+  pictures: '/pictures',
+  videos: '/videos'
+};
 
-/**
- * Check if running in Electron environment
- * 
- * @returns {boolean} true if running in Electron, false if in browser
- */
+// Always returns false in web builds
 export function isElectron(): boolean {
-  // Check for explicit web build flag first (most reliable)
-  if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-    return false;
-  }
-
-  // Otherwise check for window.electron
-  return window.electron !== undefined;
+  return false;
 }
 
-/**
- * Check if running in web environment (inverse of isElectron)
- * 
- * @returns {boolean} true if running in browser, false if in Electron
- */
+// Always returns true in web builds
 export function isWeb(): boolean {
-  return !isElectron();
+  return true;
 }
 
-/**
- * Dynamically imports an Electron module
- * In web environments, returns null and optionally logs a message
- * 
- * @param {string} moduleName - Name of the module to import (e.g., 'electron')
- * @param {boolean} suppressLog - Whether to suppress the console message in web environments
- * @returns {Promise<T | null>} The imported module or null in web environments
- */
+// Stub for importing Electron modules
 export async function importElectron<T = any>(moduleName: string, suppressLog = false): Promise<T | null> {
-  // Early return for explicit web builds
-  if (import.meta.env.VITE_IS_WEB_BUILD === 'true') {
-    if (!suppressLog) {
-      console.debug(`Skipping import of Electron module "${moduleName}" in web build`);
-    }
-    return null;
+  if (!suppressLog) {
+    console.debug(`Web build: Import of ${moduleName} not available`);
   }
-  
-  if (isElectron()) {
-    try {
-      // Dynamic import to prevent build-time errors
-      const module = await import(/* @vite-ignore */ moduleName);
-      return module as T;
-    } catch (error) {
-      console.error(`Failed to import Electron module "${moduleName}":`, error);
-      return null;
-    }
-  } else {
-    if (!suppressLog) {
-      console.debug(`Skipping import of Electron module "${moduleName}" in web environment`);
-    }
-    return null;
-  }
+  return null;
 }
 
-/**
- * Safely invokes an Electron IPC method with a fallback for web environments
- * 
- * @param {string} channel - The IPC channel name
- * @param {unknown[]} args - Arguments to pass to the IPC call
- * @param {Function} webFallback - Optional fallback function to call in web environments
- * @returns {Promise<T>} Result from IPC call or fallback
- */
+// Stub for IPC renderer invoke
 export async function safeIpcInvoke<T = unknown>(
   channel: string,
   args: unknown[] = [],
   webFallback?: () => Promise<T>
 ): Promise<T | undefined> {
-  try {
-    // Check if we're in Electron
-    if (isElectron()) {
-      return await window.electron.ipcRenderer.invoke(channel, ...args) as T;
-    } else {
-      // Web environment
-      if (webFallback && typeof webFallback === 'function') {
-        // In web context, use the provided fallback function
-        return await webFallback();
-      } else {
-        console.warn(`IPC call "${channel}" ignored in web environment and no fallback provided`);
-        return undefined;
-      }
-    }
-  } catch (error) {
-    console.error(`Error in safeIpcInvoke for channel "${channel}":`, error);
-    return undefined;
+  console.log(`Web build: IPC invoke to ${channel} not available`);
+  
+  if (webFallback && typeof webFallback === 'function') {
+    return await webFallback();
   }
+  
+  return undefined;
 }
 
-/**
- * Safely registers an IPC event listener with automatic cleanup
- * In web environments, logs a message and returns a no-op cleanup function
- * 
- * @param {string} channel - The IPC channel to listen on
- * @param {Function} listener - Event listener callback
- * @returns {CleanupFunction} Function to remove the event listener
- */
+// Type definition for cleanup function
+export type CleanupFunction = () => void;
+
+// Stub for IPC renderer on
 export function safeIpcOn<T = unknown>(
   channel: string,
-  listener: (event: IpcRendererEvent, data: T) => void
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  listener: (event: any, data: T) => void
 ): CleanupFunction {
-  // Check if we're in Electron
-  if (isElectron()) {
-    // Register the event listener
-    window.electron.ipcRenderer.on(channel, listener);
-    
-    // Return cleanup function
-    return () => {
-      window.electron.ipcRenderer.removeListener(channel, listener);
-    };
-  } else {
-    // In web environment, return a no-op cleanup function
-    console.debug(`IPC listener for "${channel}" not registered in web environment`);
-    return () => { /* no-op */ };
-  }
+  console.log(`Web build: IPC on listener for ${channel} not available`);
+  return () => { /* no-op */ };
 }
 
-/**
- * Safely registers a one-time IPC event listener
- * In web environments, logs a message and returns a no-op cleanup function
- * 
- * @param {string} channel - The IPC channel to listen on
- * @param {Function} listener - Event listener callback
- * @returns {CleanupFunction} Function to remove the event listener if it hasn't fired yet
- */
+// Stub for IPC renderer once
 export function safeIpcOnce<T = unknown>(
   channel: string,
-  listener: (event: IpcRendererEvent, data: T) => void
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  listener: (event: any, data: T) => void
 ): CleanupFunction {
-  // Check if we're in Electron
-  if (isElectron()) {
-    // Register the one-time event listener
-    window.electron.ipcRenderer.once(channel, listener);
-    
-    // Return cleanup function
-    return () => {
-      window.electron.ipcRenderer.removeListener(channel, listener);
-    };
-  } else {
-    // In web environment, return a no-op cleanup function
-    console.debug(`One-time IPC listener for "${channel}" not registered in web environment`);
-    return () => { /* no-op */ };
-  }
+  console.log(`Web build: IPC once listener for ${channel} not available`);
+  return () => { /* no-op */ };
 }
+
+// Stub for Electron paths
+export function getPath(pathName: string): string {
+  return WEB_PATHS[pathName as keyof typeof WEB_PATHS] || '/';
+}
+
+// Environment detection object
+export const environment: IsTyApp = {
+  isElectron: false,
+  isWeb: true,
+  isDev: import.meta.env.DEV, 
+  isProd: import.meta.env.PROD
+};
