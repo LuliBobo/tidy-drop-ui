@@ -46,7 +46,8 @@ export default defineConfig({
         ]
     ),
   ],
-  base: './',
+  // Use conditional base path depending on environment
+  base: isWeb ? '/' : './',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

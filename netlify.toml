@@ -99,8 +99,8 @@
     X-XSS-Protection = "1; mode=block"
     
     # Content security policy
-    # Adjust this based on your app's specific needs
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
+    # Temporarily more permissive for troubleshooting
+    Content-Security-Policy = "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' data: blob: https:;"
 
 # ------------------------------------------------------------------------------
 # PLUGINS
