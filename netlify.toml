@@ -99,8 +99,8 @@
     X-XSS-Protection = "1; mode=block"
     
     # Content security policy
-    # Temporarily more permissive for troubleshooting
-    Content-Security-Policy = "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' data: blob: https:;"
+    # Extremely permissive for debugging purposes - TEMPORARY
+    Content-Security-Policy = "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';"
 
 # ------------------------------------------------------------------------------
 # PLUGINS
