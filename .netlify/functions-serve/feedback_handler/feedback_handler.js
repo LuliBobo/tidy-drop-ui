@@ -1,0 +1,1 @@
+module.exports = require('./netlify/functions/feedback_handler.js')
