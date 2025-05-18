@@ -9,10 +9,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Menu, MessageCircle } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
-import { useLicense } from '@/lib/license-context';
 import FeedbackForm from './FeedbackForm';
 
 const THEME_KEY = "theme";
@@ -20,7 +18,7 @@ const THEME_KEY = "theme";
 function getPreferredTheme(): "light" | "dark" {
   if (typeof window === "undefined") return "light";
   const stored = localStorage.getItem(THEME_KEY);
-  if (stored === "light" || "dark") return stored;
+  if (stored === "light" || stored === "dark") return stored;
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   return mq.matches ? "dark" : "light";
 }
@@ -43,7 +41,6 @@ const Navbar = () => {
   const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
   const location = useLocation();
   const navigate = useNavigate();
-  const { license } = useLicense();
   const isPrivacyPage = location.pathname === '/privacy';
   const isCookiePolicyPage = location.pathname === '/cookie-policy';
   const isTermsOfServicePage = location.pathname === '/terms-of-service';
@@ -162,9 +159,6 @@ const Navbar = () => {
               {link.label}
             </button>
           ))}
-          <Badge variant={license === 'pro' ? "default" : "secondary"} className="mr-2">
-            {license === 'pro' ? '✨ Pro' : 'Free'}
-          </Badge>
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
@@ -211,11 +205,8 @@ const Navbar = () => {
           <SheetContent side="left" className="sm:w-64">
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
-              <SheetDescription className="flex items-center gap-2">
+              <SheetDescription>
                 Navigate through DropTidy
-                <Badge variant={license === 'pro' ? "default" : "secondary"}>
-                  {license === 'pro' ? '✨ Pro' : 'Free'}
-                </Badge>
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
