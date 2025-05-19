@@ -9,9 +9,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, MessageCircle } from "lucide-react"
+import { Menu } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
-import FeedbackForm from './FeedbackForm';
 
 const THEME_KEY = "theme";
 
@@ -162,7 +161,6 @@ const Navbar = () => {
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
-          <FeedbackForm />
           <button
             className="theme-toggle"
             onClick={toggleTheme}
@@ -229,14 +227,6 @@ const Navbar = () => {
               <Link to="/terms-of-service">
                 <Button variant="outline" className="justify-start">Terms of Service</Button>
               </Link>
-              <FeedbackForm 
-                trigger={
-                  <Button variant="outline" className="justify-start gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Send Feedback
-                  </Button>
-                }
-              />
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}
