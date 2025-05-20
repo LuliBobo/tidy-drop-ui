@@ -77,15 +77,6 @@ const VideoAnonymization = () => {
                 />
               ))}
             </div>
-            
-            <div className="flex flex-wrap gap-4">
-              <Button className="bg-droptidy-purple hover:bg-droptidy-purple-dark">
-                Try Video Demo
-              </Button>
-              <Button variant="outline" className="border-droptidy-purple text-droptidy-purple hover:bg-droptidy-purple/10">
-                Upgrade to Studio
-              </Button>
-            </div>
           </div>
           
           <div>
