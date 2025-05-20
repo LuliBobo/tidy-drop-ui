@@ -10,6 +10,7 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import CookiePolicyPage from "./pages/CookiePolicy";
 import TermsOfServicePage from "./pages/terms-of-service";
 import SignUp from "./pages/SignUp";
+import SignIn from "./pages/SignIn";
 import { LicenseContext, LicenseLevel } from "@/lib/license-context";
 import { CookieConsent } from "./components/ui/cookie-consent"
 
@@ -31,6 +32,8 @@ const App = () => {
               <Route path="/cookie-policy" element={<CookiePolicyPage />} />
               <Route path="/terms-of-service" element={<TermsOfServicePage />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/sign-in" element={<SignIn />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
