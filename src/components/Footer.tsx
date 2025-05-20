@@ -100,11 +100,6 @@ const Footer = () => {
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
                   Contact
                 </a>
               </li>
@@ -122,11 +117,6 @@ const Footer = () => {
                 <button onClick={() => scrollToSection('pricing')} className="text-gray-400 hover:text-white transition-colors">
                   Pricing
                 </button>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  Changelog
-                </a>
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors">
@@ -158,11 +148,6 @@ const Footer = () => {
                 >
                   Cookie Policy
                 </button>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                  GDPR Compliance
-                </a>
               </li>
             </ul>
           </div>
