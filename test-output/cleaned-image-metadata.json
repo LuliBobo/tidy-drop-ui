@@ -1,0 +1,22 @@
+[{
+  "SourceFile": "/Users/Boris/Documents/GitHub/tidy-drop-ui/test-output/test-image-copy.jpg",
+  "ExifToolVersion": 13.25,
+  "FileName": "test-image-copy.jpg",
+  "Directory": "/Users/Boris/Documents/GitHub/tidy-drop-ui/test-output",
+  "FileSize": "146 kB",
+  "FileModifyDate": "2025:05:21 08:43:18+02:00",
+  "FileAccessDate": "2025:05:21 08:43:18+02:00",
+  "FileInodeChangeDate": "2025:05:21 08:43:18+02:00",
+  "FilePermissions": "-rw-r--r--",
+  "FileType": "JPEG",
+  "FileTypeExtension": "jpg",
+  "MIMEType": "image/jpeg",
+  "ImageWidth": 640,
+  "ImageHeight": 480,
+  "EncodingProcess": "Baseline DCT, Huffman coding",
+  "BitsPerSample": 8,
+  "ColorComponents": 3,
+  "YCbCrSubSampling": "YCbCr4:2:2 (2 1)",
+  "ImageSize": "640x480",
+  "Megapixels": 0.307
+}]

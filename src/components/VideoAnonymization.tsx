@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Video, EyeOff, Brain, Cpu, Layers, PenTool } from 'lucide-react';
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 type FeatureItemProps = {
@@ -77,36 +75,6 @@ const VideoAnonymization = () => {
                 />
               ))}
             </div>
-          </div>
-          
-          <div>
-            <Card className="overflow-hidden rounded-xl border-0 bg-white shadow-lg dark:bg-gray-800">
-              <div className="relative">
-                <div className="aspect-video bg-gray-100 dark:bg-gray-700">
-                  <div className="flex h-full items-center justify-center">
-                    <div className="relative">
-                      <Video className="h-16 w-16 text-droptidy-purple opacity-20" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Button size="sm" className="rounded-full h-10 w-10 p-0 bg-droptidy-purple hover:bg-droptidy-purple-dark">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 5.14v14l11-7-11-7z" fill="currentColor" />
-                          </svg>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white">
-                  <p className="font-medium">Video Anonymization Demo</p>
-                </div>
-              </div>
-              <CardContent className="p-6">
-                <blockquote className="border-l-4 border-droptidy-purple pl-4 italic text-gray-600 dark:text-gray-300">
-                  "DropTidy's video anonymization has been a game-changer for our documentary work. We can now protect the identity of our sources without sacrificing quality."
-                </blockquote>
-                <p className="mt-4 text-sm font-medium">— Alex Rivera, Documentary Filmmaker</p>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
