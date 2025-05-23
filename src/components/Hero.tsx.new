@@ -1,3 +1,4 @@
+// filepath: /Users/Boris/Documents/GitHub/tidy-drop-ui/src/components/Hero.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileVideo, FileImage, Lock, Loader2, X } from 'lucide-react';
@@ -9,20 +10,12 @@ declare global {
   interface Window {
     electron?: {
       ipcRenderer: {
-        invoke(channel: 'clean-image', filePath: string): Promise<{
-          success: boolean;
-          originalSize?: number;
-          cleanedSize?: number;
-          metadata?: Record<string, string | number>;
-          convertedPath?: string;
-        }>;
-        invoke(channel: 'clean-video', input: string, outputPath: string): Promise<{
-          success: boolean;
-          originalSize?: number;
-          cleanedSize?: number;
-        }>;
-        // Add other invoke methods as needed
+        invoke(channel: string, ...args: any[]): Promise<any>;
       };
+    };
+    isElectronApp?: boolean;
+    process?: {
+      type: string;
     };
   }
 }
@@ -162,8 +155,8 @@ const Hero = () => {
           // Use different routing strategies for Electron and web
           if (window.isElectronApp || window.electron) {
             console.log('Detected Electron environment, using hash routing');
-            // For Electron, use hash-based routing with #/
-            window.location.href = '#/cleaner';
+            // For Electron, use hash-based routing with leading slash
+            window.location.hash = '/cleaner';
           } else {
             console.log('Detected web environment, using browser routing');
             // For web, use regular routing

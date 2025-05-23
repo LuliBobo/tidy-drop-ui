@@ -5,7 +5,7 @@ export interface IElectronAPI {
     invoke(channel: 'clean-image', filePath: string): Promise<CleanResult>;
     invoke(channel: 'clean-video', input: string, outputPath: string): Promise<CleanResult>;
     invoke(channel: 'create-zip', files: string[]): Promise<string>;
-    invoke(channel: 'read-metadata', filePath: string): Promise<any>; 
+    invoke(channel: 'read-metadata', filePath: string): Promise<Record<string, string | number>>;
     invoke(channel: 'open-folder', folderPath: string): Promise<string>;
     invoke(channel: 'load-settings'): Promise<Settings>;
     invoke(channel: 'save-settings', settings: Settings): Promise<boolean>;
@@ -23,6 +23,7 @@ export interface CleanResult {
   originalSize?: number;
   cleanedSize?: number;
   metadata?: Record<string, string | number>;
+  convertedPath?: string;
 }
 
 export interface Settings {

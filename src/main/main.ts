@@ -99,6 +99,9 @@ function createWindow() {
       preload: path.join(path.dirname(__dirname), 'preload/preload.js'),
       backgroundThrottling: false,
       offscreen: false,
+      // Disable autofill warnings in DevTools
+      devTools: true,
+      webSecurity: true,
       spellcheck: false
     }
   });
@@ -108,6 +111,11 @@ function createWindow() {
   });
 
   enable(mainWindow.webContents);
+
+  // Set a global variable to indicate we're in Electron
+  mainWindow.webContents.executeJavaScript(`
+    window.isElectronApp = true;
+  `).catch(console.error);
 
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
@@ -163,6 +171,17 @@ app.whenReady().then(() => {
     callback({ cancel: false });
   });
 
+  // Configure session to suppress DevTools warnings in development mode
+  if (process.env.NODE_ENV === 'development') {
+    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+      if (details.url.startsWith('devtools://')) {
+        callback({});
+      } else {
+        callback({ cancel: false });
+      }
+    });
+  }
+
   createWindow();
 
   app.on('activate', () => {
@@ -170,12 +189,6 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-});
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
 });
 
 // Existing IPC handlers

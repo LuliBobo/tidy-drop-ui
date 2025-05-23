@@ -4,7 +4,6 @@ import { Download, AlertTriangle, Folder, Settings as SettingsIcon } from 'lucid
 import { Progress } from "./ui/progress";
 import { Alert, AlertDescription } from "./ui/alert";
 import { 
-  checkDailyQuotaExceeded, 
   incrementDailyQuota, 
   getRemainingQuota,
   getCurrentLicense 
@@ -45,6 +44,7 @@ interface CleanResult {
   originalSize?: number;
   cleanedSize?: number;
   metadata?: { [key: string]: string | number };
+  convertedPath?: string;
 }
 
 interface FileItem {
@@ -71,6 +71,52 @@ export const FileCleaner: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
+  // Load files from sessionStorage (when redirected from Hero component)
+  useEffect(() => {
+    try {
+      const filesDataJson = sessionStorage.getItem('filesToClean');
+      if (filesDataJson) {
+        const filesData = JSON.parse(filesDataJson);
+        
+        // Define proper type for file data from sessionStorage
+        interface StoredFileData {
+          name: string;
+          type: string;
+          size: number;
+          data: number[];
+        }
+        
+        // Convert the file data back to File objects
+        const reconstructedFiles = filesData.map((fileData: StoredFileData) => {
+          const blob = new Blob([new Uint8Array(fileData.data)], { type: fileData.type });
+          const file = new File([blob], fileData.name, { type: fileData.type });
+          
+          // Create a file URL for processing
+          const path = URL.createObjectURL(blob);
+          
+          return {
+            file,
+            path,
+            status: 'idle' as 'idle' | 'cleaning' | 'success' | 'error'
+          };
+        });
+        
+        setFiles(reconstructedFiles);
+        
+        // Clear sessionStorage after retrieving files
+        sessionStorage.removeItem('filesToClean');
+        
+        toast({
+          title: "Files loaded",
+          description: `${reconstructedFiles.length} files are ready to be processed.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading files from sessionStorage:', error);
+      setError('Failed to load uploaded files. Please try again.');
+    }
+  }, []);
+  
   // Load settings when component mounts
   useEffect(() => {
     loadSettings();
@@ -151,14 +197,29 @@ export const FileCleaner: React.FC = () => {
         if (result.success) {
           incrementDailyQuota();
           setRemainingQuota(getRemainingQuota());
-          updateFileStatus(
-            fileItem.file.name,
-            'success',
-            path.join(outputDir, cleanedFileName),
-            result.originalSize,
-            result.cleanedSize,
-            result.metadata
-          );
+          
+          // Handle HEIC file conversions
+          if (result.convertedPath) {
+            // For converted HEIC files, use the converted path directly
+            updateFileStatus(
+              fileItem.file.name,
+              'success',
+              result.convertedPath,
+              result.originalSize,
+              result.cleanedSize,
+              result.metadata,
+              'Converted to JPEG format'
+            );
+          } else {
+            updateFileStatus(
+              fileItem.file.name,
+              'success',
+              path.join(outputDir, cleanedFileName),
+              result.originalSize,
+              result.cleanedSize,
+              result.metadata
+            );
+          }
           
           // Auto-open folder after cleaning if enabled
           if (autoOpenFolder && result.success) {

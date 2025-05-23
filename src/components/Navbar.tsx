@@ -161,6 +161,11 @@ const Navbar = () => {
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
+          <Link to="/signup">
+            <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white">
+              Get Started Free
+            </Button>
+          </Link>
           <button
             className="theme-toggle"
             onClick={toggleTheme}

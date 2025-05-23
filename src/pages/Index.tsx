@@ -6,7 +6,6 @@ import Pricing from '@/components/Pricing';
 import VideoAnonymization from '@/components/VideoAnonymization';
 import Security from '@/components/Security';
 import Testimonials from '@/components/Testimonials';
-import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 
@@ -57,9 +56,6 @@ const Index = () => {
         </section>
         <section id="testimonials">
           <Testimonials />
-        </section>
-        <section id="cta">
-          <CTASection />
         </section>
       </main>
       <Footer />
