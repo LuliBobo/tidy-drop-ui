@@ -1,17 +1,16 @@
 // auth.ts - Backend funkcie pre autentifikáciu
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import { app } from 'electron';
 import { electronLog } from './logger';
+import { DatabaseAdapter, PlatformMode } from './databaseAdapter';
+import { User, AuditLogEntry } from './types';
 
-// Typová definícia pre používateľa
-interface User {
-  username: string;
-  password: string; // V reálnej aplikácii by tu malo byť hašované heslo
-  role: 'admin' | 'user'; // Role pre kontrolu oprávnení
-  failedLoginAttempts?: number; // Počet neúspešných pokusov o prihlásenie
-  lockedUntil?: number; // Timestamp, dokedy je účet uzamknutý
-}
+// Universal database adapter
+const dbAdapter = new DatabaseAdapter(PlatformMode.ELECTRON);
+
+// Initialize the adapter
+(async () => {
+  await dbAdapter.initialize();
+  electronLog.info('Database adapter initialized');
+})();
 
 // Stav aktuálneho používateľa
 let currentUser: User | null = null;
@@ -20,44 +19,6 @@ let currentUser: User | null = null;
 const SECURITY_CONFIG = {
   MAX_LOGIN_ATTEMPTS: 5, // Maximálny počet pokusov o prihlásenie
   LOCKOUT_DURATION: 15 * 60 * 1000, // 15 minút v milisekundách
-};
-
-// Cesta k súboru s používateľmi
-const USER_DB_PATH = path.join(app.getPath('userData'), 'DropTidy', 'users.json');
-
-// Zabezpečiť existenciu priečinka
-const ensureUserDirectory = () => {
-  const dirPath = path.dirname(USER_DB_PATH);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
-
-// Načítanie používateľov zo súboru
-const loadUsers = (): User[] => {
-  try {
-    ensureUserDirectory();
-    if (fs.existsSync(USER_DB_PATH)) {
-      const data = fs.readFileSync(USER_DB_PATH, 'utf8');
-      return JSON.parse(data);
-    }
-    return [];
-  } catch (error) {
-    electronLog.error('Error loading users:', error);
-    return [];
-  }
-};
-
-// Uloženie používateľov do súboru
-const saveUsers = (users: User[]) => {
-  try {
-    ensureUserDirectory();
-    fs.writeFileSync(USER_DB_PATH, JSON.stringify(users, null, 2));
-    return true;
-  } catch (error) {
-    electronLog.error('Error saving users:', error);
-    return false;
-  }
 };
 
 /**
@@ -95,7 +56,7 @@ const validatePassword = (password: string): { valid: boolean; message?: string 
 };
 
 // Registrácia nového používateľa
-export const registerUser = (username: string, password: string, role: 'admin' | 'user' = 'user'): { success: boolean; message?: string } => {
+export const registerUser = async (username: string, password: string, role: 'admin' | 'user' = 'user'): Promise<{ success: boolean; message?: string }> => {
   try {
     // Validácia používateľského mena
     if (username.length < 3) {
@@ -108,7 +69,7 @@ export const registerUser = (username: string, password: string, role: 'admin' |
       return { success: false, message: passwordValidation.message };
     }
     
-    const users = loadUsers();
+    const users = await dbAdapter.loadUsers();
     
     // Kontrola existujúceho používateľa
     if (users.some(user => user.username === username)) {
@@ -118,16 +79,28 @@ export const registerUser = (username: string, password: string, role: 'admin' |
     // Ak je to prvý používateľ v systéme, automaticky ho nastavíme ako admina
     const assignedRole = users.length === 0 ? 'admin' : role;
     
-    // V reálnej aplikácii by sa heslo malo hašovať
-    users.push({ 
+    // Create backup before adding user
+    await dbAdapter.createBackup('user_registration');
+    
+    // Add user to database
+    const newUser: User = { 
       username, 
       password, 
       role: assignedRole,
-      failedLoginAttempts: 0 
-    });
-    saveUsers(users);
+      failedLoginAttempts: 0,
+      status: 'active' as const,
+      createdAt: new Date().toISOString()
+    };
     
-    return { success: true };
+    const success = await dbAdapter.addUser(newUser);
+    
+    if (success) {
+      // Add audit log entry
+      await dbAdapter.addAuditLogEntry('register', username, { role: assignedRole });
+      return { success: true };
+    }
+    
+    return { success: false, message: 'Failed to register user' };
   } catch (error) {
     electronLog.error('Error registering user:', error);
     return { success: false, message: 'An error occurred during registration' };
@@ -135,17 +108,14 @@ export const registerUser = (username: string, password: string, role: 'admin' |
 };
 
 // Overenie používateľa pri prihlásení
-export const verifyUser = (username: string, password: string): { success: boolean; message?: string } => {
+export const verifyUser = async (username: string, password: string): Promise<{ success: boolean; message?: string }> => {
   try {
-    const users = loadUsers();
-    const userIndex = users.findIndex(user => user.username === username);
+    const user = await dbAdapter.findUser(username);
     
     // Používateľ neexistuje
-    if (userIndex === -1) {
+    if (!user) {
       return { success: false, message: 'Invalid username or password' };
     }
-    
-    const user = users[userIndex];
     
     // Kontrola, či nie je účet uzamknutý
     if (user.lockedUntil && user.lockedUntil > Date.now()) {
@@ -162,10 +132,16 @@ export const verifyUser = (username: string, password: string): { success: boole
       if (user.failedLoginAttempts) {
         user.failedLoginAttempts = 0;
         user.lockedUntil = undefined;
-        saveUsers(users);
+        user.lastLogin = new Date().toISOString();
+        await dbAdapter.updateUser(username, user);
       }
       
       currentUser = user;
+      dbAdapter.setCurrentUser(user);
+      
+      // Log successful login
+      await dbAdapter.addAuditLogEntry('login', username, { success: true });
+      
       return { success: true };
     }
     
@@ -175,14 +151,26 @@ export const verifyUser = (username: string, password: string): { success: boole
     // Ak je prekročený maximálny počet pokusov, uzamknutie účtu
     if (user.failedLoginAttempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
       user.lockedUntil = Date.now() + SECURITY_CONFIG.LOCKOUT_DURATION;
-      saveUsers(users);
+      await dbAdapter.updateUser(username, user);
+      
+      // Log account lockout
+      await dbAdapter.addAuditLogEntry('account_lockout', username, { 
+        reason: 'Too many failed login attempts' 
+      });
+      
       return { 
         success: false, 
         message: `Too many failed attempts. Account is locked for 15 minutes.`
       };
     }
     
-    saveUsers(users);
+    await dbAdapter.updateUser(username, user);
+    
+    // Log failed login attempt
+    await dbAdapter.addAuditLogEntry('login_failed', username, { 
+      attemptsRemaining: SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - user.failedLoginAttempts 
+    });
+    
     return { 
       success: false, 
       message: `Invalid password. ${SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - user.failedLoginAttempts} attempts remaining.`
@@ -194,9 +182,15 @@ export const verifyUser = (username: string, password: string): { success: boole
 };
 
 // Odhlásenie používateľa
-export const logoutUser = (): boolean => {
+export const logoutUser = async (): Promise<boolean> => {
   try {
+    // Log the logout action if a user is currently logged in
+    if (currentUser) {
+      await dbAdapter.addAuditLogEntry('logout', currentUser.username);
+    }
+    
     currentUser = null;
+    dbAdapter.setCurrentUser(null);
     return true;
   } catch (error) {
     electronLog.error('Error logging out user:', error);
@@ -215,9 +209,9 @@ export const getCurrentUsername = (): string | null => {
 };
 
 // Získať zoznam všetkých používateľov - pre admin rozhranie
-export const getAllUsers = (): User[] => {
+export const getAllUsers = async (): Promise<User[]> => {
   try {
-    return loadUsers();
+    return await dbAdapter.loadUsers();
   } catch (error) {
     electronLog.error('Error getting all users:', error);
     return [];
@@ -225,31 +219,42 @@ export const getAllUsers = (): User[] => {
 };
 
 // Aktualizácia používateľa - pre admin rozhranie
-export const updateUser = (username: string, updatedData: { password?: string; role?: 'admin' | 'user' }): boolean => {
+export const updateUser = async (username: string, updatedData: { password?: string; role?: 'admin' | 'user' }): Promise<boolean> => {
   try {
-    const users = loadUsers();
-    const userIndex = users.findIndex(user => user.username === username);
+    const user = await dbAdapter.findUser(username);
     
-    if (userIndex === -1) {
+    if (!user) {
       return false;
     }
     
+    // Create backup before updating user
+    await dbAdapter.createBackup('user_update');
+    
     // Update only provided fields
+    const updates: Partial<User> = {};
+    
     if (updatedData.password) {
-      users[userIndex].password = updatedData.password;
+      updates.password = updatedData.password;
     }
     
     if (updatedData.role) {
-      users[userIndex].role = updatedData.role;
+      updates.role = updatedData.role;
     }
+    
+    const success = await dbAdapter.updateUser(username, updates);
     
     // If the updated user is the current user, update the currentUser object
-    if (currentUser && currentUser.username === username) {
-      currentUser = { ...users[userIndex] };
+    if (success && currentUser && currentUser.username === username) {
+      currentUser = { ...currentUser, ...updates };
+      dbAdapter.setCurrentUser(currentUser);
     }
     
-    saveUsers(users);
-    return true;
+    if (success) {
+      // Add audit log entry
+      await dbAdapter.addAuditLogEntry('update', username, updatedData);
+    }
+    
+    return success;
   } catch (error) {
     electronLog.error('Error updating user:', error);
     return false;
@@ -257,14 +262,14 @@ export const updateUser = (username: string, updatedData: { password?: string; r
 };
 
 // Vymazanie používateľa - pre admin rozhranie
-export const deleteUser = (username: string): { success: boolean; error?: string } => {
+export const deleteUser = async (username: string): Promise<{ success: boolean; error?: string }> => {
   try {
     // Cannot delete yourself
     if (currentUser && currentUser.username === username) {
       return { success: false, error: 'Cannot delete your own account' };
     }
     
-    const users = loadUsers();
+    const users = await dbAdapter.loadUsers();
     const userToDelete = users.find(user => user.username === username);
     
     // Check if user exists
@@ -283,9 +288,20 @@ export const deleteUser = (username: string): { success: boolean; error?: string
       }
     }
     
-    const filteredUsers = users.filter(user => user.username !== username);
-    saveUsers(filteredUsers);
-    return { success: true };
+    // Create backup before deleting user
+    await dbAdapter.createBackup('user_deletion');
+    
+    // Delete user and log the action
+    const success = await dbAdapter.deleteUser(username);
+    
+    if (success) {
+      // Add audit log entry
+      await dbAdapter.addAuditLogEntry('delete', username, { 
+        deletedBy: getCurrentUsername() 
+      });
+    }
+    
+    return { success };
   } catch (error) {
     electronLog.error('Error deleting user:', error);
     return { success: false, error: `An error occurred: ${error}` };
@@ -331,13 +347,12 @@ const cleanupExpiredResetCodes = (): void => {
  * @param username Používateľské meno
  * @returns Objekt s výsledkom operácie a prípadným resetovacím kódom
  */
-export const initiatePasswordReset = (username: string): { success: boolean; code?: string; message?: string } => {
+export const initiatePasswordReset = async (username: string): Promise<{ success: boolean; code?: string; message?: string }> => {
   try {
     // Odstránenie starých kódov
     cleanupExpiredResetCodes();
     
-    const users = loadUsers();
-    const user = users.find(user => user.username === username);
+    const user = await dbAdapter.findUser(username);
     
     // Používateľ neexistuje
     if (!user) {
@@ -360,6 +375,9 @@ export const initiatePasswordReset = (username: string): { success: boolean; cod
       expiresAt
     });
     
+    // Log the password reset initiation
+    await dbAdapter.addAuditLogEntry('password_reset_initiated', username);
+    
     // V reálnej aplikácii by sa kód poslal e-mailom
     // Tu ho vrátime, aby sme ho mohli použiť v demo režime
     return { success: true, code };
@@ -376,7 +394,7 @@ export const initiatePasswordReset = (username: string): { success: boolean; cod
  * @param newPassword Nové heslo
  * @returns Objekt s výsledkom operácie
  */
-export const completePasswordReset = (username: string, code: string, newPassword: string): { success: boolean; message?: string } => {
+export const completePasswordReset = async (username: string, code: string, newPassword: string): Promise<{ success: boolean; message?: string }> => {
   try {
     // Odstránenie starých kódov
     cleanupExpiredResetCodes();
@@ -398,27 +416,75 @@ export const completePasswordReset = (username: string, code: string, newPasswor
       return { success: false, message: passwordValidation.message };
     }
     
-    // Update hesla
-    const users = loadUsers();
-    const userIndex = users.findIndex(user => user.username === username);
+    const user = await dbAdapter.findUser(username);
     
-    if (userIndex === -1) {
+    if (!user) {
       return { success: false, message: 'User not found' };
     }
     
-    // Aktualizácia hesla a odomknutie účtu
-    users[userIndex].password = newPassword;
-    users[userIndex].failedLoginAttempts = 0;
-    users[userIndex].lockedUntil = undefined;
+    // Create backup before password reset
+    await dbAdapter.createBackup('password_reset');
     
-    saveUsers(users);
+    // Aktualizácia hesla a odomknutie účtu
+    const updates = {
+      password: newPassword,
+      failedLoginAttempts: 0,
+      lockedUntil: undefined
+    };
+    
+    const success = await dbAdapter.updateUser(username, updates);
+    
+    if (!success) {
+      return { success: false, message: 'Failed to update password' };
+    }
     
     // Odstránenie použitého kódu
     resetCodes = resetCodes.filter(entry => entry.username !== username);
+    
+    // Log the successful password reset
+    await dbAdapter.addAuditLogEntry('password_reset_completed', username);
     
     return { success: true, message: 'Password has been reset successfully' };
   } catch (error) {
     electronLog.error('Error completing password reset:', error);
     return { success: false, message: 'An error occurred during password reset' };
   }
+};
+
+/**
+ * Exportovanie používateľských dát do súboru
+ * @param exportPath Cesta, kam sa majú dáta exportovať
+ * @returns Objekt s výsledkom exportu
+ */
+export const exportUserData = async (exportPath: string): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const result = await dbAdapter.exportUserData(exportPath);
+    return result;
+  } catch (error) {
+    electronLog.error('Error exporting user data:', error);
+    return { success: false, message: `Failed to export user data: ${error}` };
+  }
+};
+
+/**
+ * Importovanie používateľských dát zo súboru
+ * @param importPath Cesta k súboru s dátami na import
+ * @param mode Režim importu - 'replace' nahradí všetky existujúce dáta, 'merge' ich zlúči
+ * @returns Objekt s výsledkom importu
+ */
+export const importUserData = async (importPath: string, mode: 'replace' | 'merge' = 'merge'): Promise<{ success: boolean; message?: string }> => {
+  try {
+    const result = await dbAdapter.importUserData(importPath, mode);
+    return result;
+  } catch (error) {
+    electronLog.error('Error importing user data:', error);
+    return { success: false, message: `Failed to import user data: ${error}` };
+  }
+};
+
+// Add functions to query and manage audit logs
+export const getAuditLogs = async (): Promise<unknown[]> => {
+  // This functionality can be implemented in the future
+  // For now, we'll return an empty array
+  return [];
 };

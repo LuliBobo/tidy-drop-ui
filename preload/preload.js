@@ -24,7 +24,10 @@ contextBridge.exposeInMainWorld("electron", {
         "get-user-role",
         // Reset hesla
         "initiate-password-reset",
-        "complete-password-reset"
+        "complete-password-reset",
+        // Data import/export
+        "export-user-data",
+        "import-user-data"
       ];
       if (validChannels.includes(channel)) {
         return await ipcRenderer.invoke(channel, ...args);

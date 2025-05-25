@@ -18,15 +18,10 @@ import {
   isCurrentUserAdmin, 
   getCurrentUserRole,
   initiatePasswordReset,
-  completePasswordReset
+  completePasswordReset,
+  exportUserData,
+  importUserData
 } from '../backend/auth';
-
-// Vypnutie hardvérovej akcelerácie ak je potrebné
-app.disableHardwareAcceleration();
-
-// V prípade zlyhania GPU procesov
-app.commandLine.appendSwitch('ignore-gpu-blacklist');
-app.commandLine.appendSwitch('enable-gpu-rasterization');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -389,4 +384,13 @@ ipcMain.handle('initiate-password-reset', async (_, username: string) => {
 
 ipcMain.handle('complete-password-reset', async (_, username: string, code: string, newPassword: string) => {
   return completePasswordReset(username, code, newPassword);
+});
+
+// IPC handlers for data import/export
+ipcMain.handle('export-user-data', async (_, exportPath: string) => {
+  return exportUserData(exportPath);
+});
+
+ipcMain.handle('import-user-data', async (_, importPath: string, mode: 'replace' | 'merge') => {
+  return importUserData(importPath, mode);
 });
