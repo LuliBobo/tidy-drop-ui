@@ -9,8 +9,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import { Menu, Shield } from "lucide-react"
 import DropTidyLogo from "./DropTidyLogo";
+import { useAuth } from "@/contexts/AuthContext";
+import LogoutButton from "./LogoutButton";
 
 const THEME_KEY = "theme";
 
@@ -40,6 +42,7 @@ const Navbar = () => {
   const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
   const location = useLocation();
   const navigate = useNavigate();
+  const { isLoggedIn, username, isAdmin } = useAuth();
   const isPrivacyPage = location.pathname === '/privacy';
   const isCookiePolicyPage = location.pathname === '/cookie-policy';
   const isTermsOfServicePage = location.pathname === '/terms-of-service';
@@ -134,15 +137,24 @@ const Navbar = () => {
     }
   };
 
+  // Handle logo click - force navigation to home page
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Use navigate to force a navigation even if already on the page
+    navigate('/', { replace: true });
+    // If on home page, scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <nav className="fixed top-0 left-0 w-full bg-background/95 backdrop-blur-sm z-50 shadow">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <a href="#" onClick={handleLogoClick} className="flex items-center gap-2">
           <DropTidyLogo size={36} />
           <span className="text-xl font-bold text-indigo-600 logo-text" aria-label="DropTidy">
             DropTidy
           </span>
-        </Link>
+        </a>
         <div className="hidden md:flex items-center space-x-4">
           {navLinks.map((link) => (
             <button 
@@ -161,11 +173,33 @@ const Navbar = () => {
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
           </Link>
-          <Link to="/signup">
-            <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white">
-              Get Started Free
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Hello, {username}
+              </span>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                    aria-label="Admin Dashboard"
+                    title="Access Administrator Dashboard"
+                  >
+                    <Shield className="h-4 w-4" />
+                    <span>Admin Panel</span>
+                  </Button>
+                </Link>
+              )}
+              <LogoutButton />
+            </>
+          ) : (
+            <Link to="/signup">
+              <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white">
+                Get Started Free
+              </Button>
+            </Link>
+          )}
           <button
             className="theme-toggle"
             onClick={toggleTheme}
@@ -232,6 +266,29 @@ const Navbar = () => {
               <Link to="/terms-of-service">
                 <Button variant="outline" className="justify-start">Terms of Service</Button>
               </Link>
+              
+              {isLoggedIn ? (
+                <>
+                  <div className="px-2 py-1.5 text-sm text-gray-600 dark:text-gray-400">
+                    Hello, {username}
+                  </div>
+                  {isAdmin && (
+                    <Link to="/admin">
+                      <Button variant="outline" className="justify-start w-full flex items-center gap-1">
+                        <Shield className="h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </Button>
+                    </Link>
+                  )}
+                  <LogoutButton />
+                </>
+              ) : (
+                <Link to="/signup">
+                  <Button variant="default" className="justify-start w-full">
+                    Get Started Free
+                  </Button>
+                </Link>
+              )}
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}

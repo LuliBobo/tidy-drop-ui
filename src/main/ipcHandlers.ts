@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron';
+// Import will be needed when implementing IPC handlers
+// import { ipcMain } from 'electron';
 
 // Tu môžete pridať ďalšie ipc handlery podľa potreby
 // Napríklad:

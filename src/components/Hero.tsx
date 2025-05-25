@@ -4,28 +4,7 @@ import { Upload, FileVideo, FileImage, Lock, Loader2, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import 'animate.css';
 
-// Define electron interface properly
-declare global {
-  interface Window {
-    electron?: {
-      ipcRenderer: {
-        invoke(channel: 'clean-image', filePath: string): Promise<{
-          success: boolean;
-          originalSize?: number;
-          cleanedSize?: number;
-          metadata?: Record<string, string | number>;
-          convertedPath?: string;
-        }>;
-        invoke(channel: 'clean-video', input: string, outputPath: string): Promise<{
-          success: boolean;
-          originalSize?: number;
-          cleanedSize?: number;
-        }>;
-        // Add other invoke methods as needed
-      };
-    };
-  }
-}
+// Using global electron interface from /src/types/electron.d.ts
 
 const Hero = () => {
   const [dragActive, setDragActive] = useState(false);

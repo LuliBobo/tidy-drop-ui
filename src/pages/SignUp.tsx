@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from '@/hooks/use-toast';
 import { 
   Form, 
   FormControl, 
@@ -45,13 +46,39 @@ const SignUp = () => {
   const onSubmit = async (data: SignUpForm) => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual signup logic here
-      console.log('Sign up data:', data);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      navigate('/');
+      const { username, password } = data;
+      
+      // Pre Electron verziu
+      if (window.electron?.ipcRenderer) {
+        const result = await window.electron.ipcRenderer.invoke(
+          'register-user', 
+          username, 
+          password, 
+          'user' // Explicitne nastav rolu na 'user'
+        );
+        
+        if (result.success) {
+          console.log('Successfully registered user:', username);
+          toast({
+            title: 'Registration successful',
+            description: 'Your account has been created. You can now sign in.',
+          });
+          navigate('/signin');
+        } else {
+          throw new Error(result.message || 'Registration failed - username may already exist');
+        }
+      } else {
+        // Pre web verziu - simulacia API volania
+        console.log('Sign up data:', data);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // V produkcii by tu bolo realne API volanie na server
+        localStorage.setItem('registeredUser', username);
+        navigate('/signin');
+      }
     } catch (error) {
       console.error('Signup error:', error);
+      alert('Registration failed. Please try a different username.');
     } finally {
       setIsLoading(false);
     }

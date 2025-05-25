@@ -1,19 +1,12 @@
-import React from 'react';
-import { Mail, Lock, FileText, ScrollText } from 'lucide-react';
+import { Mail, Lock, FileText } from 'lucide-react';
 import Navbar from './Navbar';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface TermsOfServiceProps {
   embedded?: boolean;
 }
 
 const TermsOfService: React.FC<TermsOfServiceProps> = ({ embedded = false }) => {
-  const navigate = useNavigate();
-
-  const handleNavigation = (href: string, sectionId: string) => {
-    // Navigate to main page with section hash
-    navigate('/' + href);
-  };
 
   return (
     <div className="min-h-screen bg-background">

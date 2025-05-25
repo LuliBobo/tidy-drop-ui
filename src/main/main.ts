@@ -6,6 +6,20 @@ import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
 import { cleanImage, cleanVideo, createZipExport, readMetadata } from '../backend/cleaner';
 import { electronLog } from '../backend/logger';
+import { 
+  registerUser, 
+  verifyUser, 
+  logoutUser, 
+  isUserLoggedIn, 
+  getCurrentUsername, 
+  getAllUsers, 
+  updateUser, 
+  deleteUser, 
+  isCurrentUserAdmin, 
+  getCurrentUserRole,
+  initiatePasswordReset,
+  completePasswordReset
+} from '../backend/auth';
 
 // Vypnutie hardvérovej akcelerácie ak je potrebné
 app.disableHardwareAcceleration();
@@ -314,4 +328,65 @@ ipcMain.handle('send-feedback', async (_, feedback) => {
       return { success: false, error: `${error}. Additionally, failed to save locally: ${localError}` };
     }
   }
+});
+
+// Authentication IPC handlers
+ipcMain.handle('register-user', async (_, username: string, password: string) => {
+  return registerUser(username, password);
+});
+
+ipcMain.handle('login-user', async (_, username: string, password: string) => {
+  return verifyUser(username, password);
+});
+
+ipcMain.handle('logout-user', async () => {
+  return logoutUser();
+});
+
+ipcMain.handle('check-auth', async () => {
+  return {
+    isLoggedIn: isUserLoggedIn(),
+    username: getCurrentUsername()
+  };
+});
+
+// Admin operation IPC handlers
+ipcMain.handle('get-all-users', async () => {
+  // Check if the current user is an admin
+  if (!isCurrentUserAdmin()) {
+    return { success: false, error: 'Unauthorized access' };
+  }
+  return { success: true, users: getAllUsers() };
+});
+
+ipcMain.handle('update-user', async (_, username: string, updatedData: { password?: string; role?: 'admin' | 'user' }) => {
+  // Check if the current user is an admin
+  if (!isCurrentUserAdmin()) {
+    return { success: false, error: 'Unauthorized access' };
+  }
+  return { success: updateUser(username, updatedData) };
+});
+
+ipcMain.handle('delete-user', async (_, username: string) => {
+  // Check if the current user is an admin
+  if (!isCurrentUserAdmin()) {
+    return { success: false, error: 'Unauthorized access' };
+  }
+  return deleteUser(username);
+});
+
+ipcMain.handle('get-user-role', async () => {
+  return {
+    isAdmin: isCurrentUserAdmin(),
+    role: getCurrentUserRole()
+  };
+});
+
+// IPC handlers for password reset
+ipcMain.handle('initiate-password-reset', async (_, username: string) => {
+  return initiatePasswordReset(username);
+});
+
+ipcMain.handle('complete-password-reset', async (_, username: string, code: string, newPassword: string) => {
+  return completePasswordReset(username, code, newPassword);
 });

@@ -60,6 +60,9 @@ export const FeedbackForm: React.FC<FeedbackFormProps> = ({
   const onSubmit = async (values: FeedbackFormValues) => {
     setIsSubmitting(true);
     try {
+      if (!window.electron) {
+        throw new Error("Electron not available");
+      }
       const result = await window.electron.ipcRenderer.invoke('send-feedback', values);
       
       if (result.success) {

@@ -1,3 +1,4 @@
+// filepath: /Users/Boris/Documents/GitHub/tidy-drop-ui/src/components/SettingsModal.tsx
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
@@ -36,6 +37,9 @@ export const SettingsModal: React.FC<SettingsProps> = ({
   const handleSave = async () => {
     try {
       // Save the settings to config file via IPC
+      if (!window.electron) {
+        throw new Error("Electron not available");
+      }
       await window.electron.ipcRenderer.invoke('save-settings', {
         outputDir: tempOutputDir,
         autoOpenFolder: tempAutoOpenFolder
@@ -62,8 +66,11 @@ export const SettingsModal: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleSelectFolder = async () => {
+  const handleBrowse = async () => {
     try {
+      if (!window.electron) {
+        throw new Error("Electron not available");
+      }
       const selectedPath = await window.electron.ipcRenderer.invoke('select-directory');
       if (selectedPath) {
         setTempOutputDir(selectedPath);
@@ -94,7 +101,7 @@ export const SettingsModal: React.FC<SettingsProps> = ({
               <Button 
                 variant="outline" 
                 size="icon" 
-                onClick={handleSelectFolder} 
+                onClick={handleBrowse} 
                 aria-label="Select output directory"
               >
                 <Folder className="h-4 w-4" />
@@ -111,12 +118,7 @@ export const SettingsModal: React.FC<SettingsProps> = ({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
-            Save changes
-          </Button>
+          <Button onClick={handleSave}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

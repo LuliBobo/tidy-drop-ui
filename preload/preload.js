@@ -11,7 +11,20 @@ contextBridge.exposeInMainWorld("electron", {
         "open-folder",
         "load-settings",
         "save-settings",
-        "select-directory"
+        "select-directory",
+        // Autentifikačné kanály
+        "register-user",
+        "login-user",
+        "logout-user",
+        "check-auth",
+        // Admin kanály
+        "get-all-users",
+        "update-user",
+        "delete-user",
+        "get-user-role",
+        // Reset hesla
+        "initiate-password-reset",
+        "complete-password-reset"
       ];
       if (validChannels.includes(channel)) {
         return await ipcRenderer.invoke(channel, ...args);

@@ -15,37 +15,9 @@ import UpgradeModal from './UpgradeModal';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
 
-type PathName = 'home' | 'appData' | 'userData' | 'sessionData' | 'temp' | 'exe' | 'module' | 
-                'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 
-                'recent' | 'logs' | 'crashDumps';
+// Using global type definitions from /src/types/electron.d.ts
 
-declare global {
-  interface Window {
-    electron: {
-      ipcRenderer: {
-        invoke(channel: 'clean-image', filePath: string): Promise<CleanResult>;
-        invoke(channel: 'clean-video', input: string, outputPath: string): Promise<CleanResult>;
-        invoke(channel: 'create-zip', files: string[]): Promise<string>;
-        invoke(channel: 'load-settings'): Promise<{ outputDir: string; autoOpenFolder: boolean }>;
-        invoke(channel: 'save-settings', settings: { outputDir: string; autoOpenFolder: boolean }): Promise<boolean>;
-        invoke(channel: 'select-directory'): Promise<string | null>;
-      };
-      app: {
-        getPath(name: PathName): string;
-        showItemInFolder(path: string): void;
-        openFolder(path: string): void;
-      };
-    };
-  }
-}
-
-interface CleanResult {
-  success: boolean;
-  originalSize?: number;
-  cleanedSize?: number;
-  metadata?: { [key: string]: string | number };
-  convertedPath?: string;
-}
+// CleanResult type is defined in the global window.electron interface
 
 interface FileItem {
   file: File;
@@ -119,24 +91,30 @@ export const FileCleaner: React.FC = () => {
   
   // Load settings when component mounts
   useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        if (!window.electron) {
+          console.error("Electron not available");
+          return;
+        }
+        
+        const settings = await window.electron.ipcRenderer.invoke('load-settings');
+        setOutputDir(settings.outputDir);
+        setAutoOpenFolder(settings.autoOpenFolder);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Set default output directory if loading fails
+        if (window.electron) {
+          const homePath = await window.electron.app.getPath('home');
+          setOutputDir(path.join(homePath, 'Cleaned'));
+        }
+      }
+    };
+    
     loadSettings();
     setRemainingQuota(getRemainingQuota());
     setCurrentLicense(getCurrentLicense());
   }, []);
-
-  // Load user settings from config file
-  const loadSettings = async () => {
-    try {
-      const settings = await window.electron.ipcRenderer.invoke('load-settings');
-      setOutputDir(settings.outputDir);
-      setAutoOpenFolder(settings.autoOpenFolder);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-      // Fallback to default values
-      setOutputDir(path.join(window.electron.app.getPath('home'), 'Cleaned'));
-      setAutoOpenFolder(false);
-    }
-  };
 
   // Update remaining quota after each file is processed
   useEffect(() => {
@@ -193,21 +171,21 @@ export const FileCleaner: React.FC = () => {
     try {
       if (isImage) {
         const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron.ipcRenderer.invoke('clean-image', fileItem.path);
-        if (result.success) {
+        const result = await window.electron?.ipcRenderer.invoke('clean-image', fileItem.path);
+        if (result && result?.success) {
           incrementDailyQuota();
           setRemainingQuota(getRemainingQuota());
           
           // Handle HEIC file conversions
-          if (result.convertedPath) {
+          if (result && result?.convertedPath) {
             // For converted HEIC files, use the converted path directly
             updateFileStatus(
               fileItem.file.name,
               'success',
-              result.convertedPath,
-              result.originalSize,
-              result.cleanedSize,
-              result.metadata,
+              result?.convertedPath,
+              result?.originalSize,
+              result?.cleanedSize,
+              result?.metadata,
               'Converted to JPEG format'
             );
           } else {
@@ -215,40 +193,40 @@ export const FileCleaner: React.FC = () => {
               fileItem.file.name,
               'success',
               path.join(outputDir, cleanedFileName),
-              result.originalSize,
-              result.cleanedSize,
-              result.metadata
+              result?.originalSize,
+              result?.cleanedSize,
+              result?.metadata
             );
           }
           
           // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result.success) {
-            window.electron.app.openFolder(outputDir);
+          if (autoOpenFolder && result && result?.success) {
+            window.electron?.app.openFolder(outputDir);
           }
         } else {
           updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean image');
         }
       } else if (isVideo) {
         const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron.ipcRenderer.invoke(
-          'clean-video',
+        const result = await window.electron?.ipcRenderer.invoke(
+        'clean-video',
           fileItem.path,
           path.join(outputDir, cleanedFileName)
         );
-        if (result.success) {
+        if (result && result?.success) {
           incrementDailyQuota();
           setRemainingQuota(getRemainingQuota());
           updateFileStatus(
             fileItem.file.name,
             'success',
             path.join(outputDir, cleanedFileName),
-            result.originalSize,
-            result.cleanedSize
+            result?.originalSize,
+            result?.cleanedSize
           );
           
           // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result.success) {
-            window.electron.app.openFolder(outputDir);
+          if (autoOpenFolder && result && result?.success) {
+            window.electron?.app.openFolder(outputDir);
           }
         } else {
           updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean video');
@@ -287,24 +265,36 @@ export const FileCleaner: React.FC = () => {
   const handleExportZip = async () => {
     try {
       setIsExporting(true);
+      
+      if (!window.electron) {
+        throw new Error("Electron not available");
+      }
+      
       const successfulFiles = files
         .filter(f => f.status === 'success' && f.outputPath)
         .map(f => f.outputPath as string);
       
       if (successfulFiles.length === 0) return;
-
-      const zipPath = await window.electron.ipcRenderer.invoke('create-zip', successfulFiles);
-      // Otvoriť priečinok s exportovaným ZIP súborom
-      window.electron.app.showItemInFolder(zipPath);
+      
+      const zipResult = await window.electron.ipcRenderer.invoke('create-zip', successfulFiles);
+      
+      if (zipResult.success && zipResult.zipPath) {
+        window.electron.app.showItemInFolder(zipResult.zipPath);
+      }
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('Error creating zip:', error);
+      toast({
+        title: "Export Failed",
+        description: "Could not create zip file",
+        variant: "destructive"
+      });
     } finally {
       setIsExporting(false);
     }
   };
 
   const handleOpenOutputFolder = useCallback(() => {
-    window.electron.app.openFolder(outputDir);
+    window.electron?.app.openFolder(outputDir);
   }, [outputDir]);
 
   // Function to format metadata for display

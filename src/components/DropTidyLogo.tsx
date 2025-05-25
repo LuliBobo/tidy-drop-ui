@@ -1,10 +1,8 @@
 
-import React from "react";
-
 const DropTidyLogo = ({ size = 36 }: { size?: number }) => (
   <span
     aria-label="DropTidy logo"
-    className="inline-flex items-center justify-center select-none"
+    className={`inline-flex items-center justify-center select-none`}
     style={{ height: size, width: size }}
   >
     {/* SVG traced from uploaded image: "D" in a circle, purple color */}

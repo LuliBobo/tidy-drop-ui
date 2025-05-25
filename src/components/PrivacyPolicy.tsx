@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { Mail, Lock, FileText } from 'lucide-react';
 import Navbar from './Navbar';
 

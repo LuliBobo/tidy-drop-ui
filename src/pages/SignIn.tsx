@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const signInSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -33,16 +35,66 @@ const SignIn = () => {
     }
   });
 
+  const { login } = useAuth();
+
   const onSubmit = async (data: SignInForm) => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual signin logic here
-      console.log('Sign in data:', data);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      navigate('/');
+      // Získanie používateľského mena a hesla z formulára
+      const { username, password } = data;
+      
+      // Pre Electron verziu
+      if (window.electron?.ipcRenderer) {
+        const result = await window.electron.ipcRenderer.invoke('login-user', username, password);
+        if (result.success) {
+          // Aktualizácia AuthContext
+          login(username);
+          
+          toast({
+            title: 'Welcome back!',
+            description: 'You have successfully logged in.',
+          });
+          
+          navigate('/');
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Login failed',
+            description: result.message || 'Invalid username or password. Please try again.',
+          });
+        }
+      } 
+      // Pre web verziu
+      else {
+        // Simulácia API volania
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Demo prihlásenie (v produkcii by tu bolo API volanie)
+        if (username === 'demo' && password === 'password') {
+          // Aktualizácia AuthContext
+          login(username);
+          
+          toast({
+            title: 'Welcome back!',
+            description: 'You have successfully logged in.',
+          });
+          
+          navigate('/');
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Login failed',
+            description: 'Invalid username or password. Please try again.',
+          });
+        }
+      }
     } catch (error) {
       console.error('Signin error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Login error',
+        description: 'An unexpected error occurred. Please try again.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -93,12 +145,17 @@ const SignIn = () => {
           </form>
         </Form>
 
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-[#6366F1] hover:text-[#5558D6]">
-            Sign up
+        <div className="mt-4 text-center text-sm">
+          <Link to="/reset-password" className="text-gray-600 hover:text-[#6366F1] block mb-2">
+            Forgot your password?
           </Link>
-        </p>
+          <p className="text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-[#6366F1] hover:text-[#5558D6]">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
