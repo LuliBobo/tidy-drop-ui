@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Upload, FileVideo, FileImage, Lock, Loader2, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import 'animate.css';
 
 // Using global electron interface from /src/types/electron.d.ts
 
@@ -22,9 +21,13 @@ const Hero = () => {
       Array.from(text).forEach((char, i) => {
         const span = document.createElement('span');
         span.textContent = char === ' ' ? '\u00A0' : char; // Use non-breaking space for spaces
-        span.className = 'animate__animated animate__fadeInUp opacity-0';
+        span.className = 'opacity-0 translate-y-4 transition-all duration-500 ease-out';
         span.style.animationDelay = `${i * 0.05}s`;
         span.style.display = 'inline-block';
+        // Trigger animation after a small delay
+        setTimeout(() => {
+          span.classList.remove('opacity-0', 'translate-y-4');
+        }, i * 50);
         firstHeadlineRef.current?.appendChild(span);
       });
     }
@@ -36,20 +39,18 @@ const Hero = () => {
       Array.from(text).forEach((char, i) => {
         const span = document.createElement('span');
         span.textContent = char === ' ' ? '\u00A0' : char;
-        span.className = 'animate__animated animate__fadeInUp opacity-0';
+        span.className = 'opacity-0 translate-y-4 transition-all duration-500 ease-out';
         span.style.animationDelay = `${1 + (i * 0.05)}s`; // Start 1 second after first headline
         span.style.display = 'inline-block';
+        // Trigger animation after a small delay
+        setTimeout(() => {
+          span.classList.remove('opacity-0', 'translate-y-4');
+        }, 1000 + (i * 50));
         secondHeadlineRef.current?.appendChild(span);
       });
     }
 
-    // Trigger animations
-    const spans = document.querySelectorAll('.animate__fadeInUp');
-    spans.forEach(span => {
-      span.addEventListener('animationstart', () => {
-        (span as HTMLElement).style.opacity = '1';
-      });
-    });
+    // No longer need to manually trigger animations since we're using setTimeout
   }, []);
 
   const handleCleanFiles = async () => {
@@ -251,7 +252,7 @@ const Hero = () => {
             DropTidy removes hidden metadata from your media files. Just drag, clean, and download.
           </p>
           <div className="relative w-full max-w-2xl mx-auto" id="file-upload">
-            <div className="relative rounded-2xl bg-white p-4 shadow-xl dark:bg-gray-800 animate-float">
+            <div className="relative rounded-2xl bg-white p-4 shadow-xl dark:bg-gray-800 animate-pulse">
               <div onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} className={`rounded-xl bg-gray-100 p-8 dark:bg-gray-700 transition-all duration-300 ${dragActive ? 'border-2 border-droptidy-purple border-dashed' : ''}`}>
                 <div className="mb-6 flex items-center gap-2 justify-center">
                   <Upload className="h-6 w-6 text-droptidy-purple" />

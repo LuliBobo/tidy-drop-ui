@@ -1,5 +1,6 @@
 import React from 'react';
-import { type CleanStatus } from '../Dropzone';
+
+type CleanStatus = 'idle' | 'cleaning' | 'success' | 'error';
 
 interface FileStatusIndicatorProps {
   status: CleanStatus;

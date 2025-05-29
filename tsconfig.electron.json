@@ -20,7 +20,6 @@
   "include": ["vite.config.ts", "src/main/**/*", "src/preload/**/*", "src/backend/**/*"],
   "exclude": [
     "node_modules", 
-    "src/backend/webConfig.ts", 
     "src/backend/postgresAdapter.ts",
     "src/backend/netlifyAdapter.ts"
   ]
