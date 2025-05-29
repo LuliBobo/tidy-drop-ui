@@ -1,10 +1,10 @@
 // Universal database adapter for cross-platform support
 import { app } from 'electron';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import * as path from 'path';
-import { electronLog } from './logger';
-import { PostgresAdapter } from './postgresAdapter';
-import { User, AuditLogEntry, ExportData, ImportResult, ExportResult } from './types';
+import { electronLog } from './logger.js';
+// import { PostgresAdapter } from './postgresAdapter'; // Excluded from Electron build
+import { User, AuditLogEntry, ExportData, ImportResult, ExportResult } from './types.js';
 
 // Enum for platform mode
 export enum PlatformMode {
@@ -18,7 +18,7 @@ export enum PlatformMode {
  */
 export class DatabaseAdapter {
   private mode: PlatformMode;
-  private postgresAdapter: PostgresAdapter | null = null;
+  private postgresAdapter: any | null = null; // Dynamic type for cross-platform compatibility
   private isInitialized = false;
   
   // Paths for Electron mode
@@ -51,30 +51,15 @@ export class DatabaseAdapter {
   async initialize(postgresConfig?: Record<string, unknown>): Promise<boolean> {
     try {
       if (this.mode === PlatformMode.WEB) {
-        if (!postgresConfig) {
-          // Try to load from environment variables
-          const dbConfig = {
-            host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT || '5432'),
-            database: process.env.DB_NAME || 'droptidy_db',
-            user: process.env.DB_USER || 'postgres',
-            password: process.env.DB_PASSWORD || 'postgres',
-            ssl: process.env.DB_SSL === 'true'
-          };
-          
-          this.postgresAdapter = new PostgresAdapter(dbConfig);
-        } else {
-          this.postgresAdapter = new PostgresAdapter(postgresConfig as any);
-        }
-        
-        this.isInitialized = await this.postgresAdapter.initialize();
-        return this.isInitialized;
-      } else {
-        // For Electron mode, make sure directories exist
-        this.ensureDirectories();
-        this.isInitialized = true;
-        return true;
+        // In Electron builds, web mode is not supported
+        electronLog.warn('Web mode not supported in Electron build, falling back to Electron mode');
+        this.mode = PlatformMode.ELECTRON;
       }
+      
+      // Electron mode
+      this.ensureDirectories();
+      this.isInitialized = true;
+      return true;
     } catch (error) {
       electronLog.error('Error initializing DatabaseAdapter:', error);
       return false;

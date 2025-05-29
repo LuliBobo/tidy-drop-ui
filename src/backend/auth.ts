@@ -1,7 +1,7 @@
 // auth.ts - Backend funkcie pre autentifikáciu
-import { electronLog } from './logger';
-import { DatabaseAdapter, PlatformMode } from './databaseAdapter';
-import { User, AuditLogEntry } from './types';
+import { electronLog } from './logger.js';
+import { DatabaseAdapter, PlatformMode } from './databaseAdapter.js';
+import { User } from './types.js';
 
 // Universal database adapter
 const dbAdapter = new DatabaseAdapter(PlatformMode.ELECTRON);

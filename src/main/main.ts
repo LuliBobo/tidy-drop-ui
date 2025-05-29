@@ -1,11 +1,11 @@
 import { app, BrowserWindow, ipcMain, shell, session, dialog } from 'electron';
-import { initialize, enable } from '@electron/remote/main';
+import { initialize, enable } from '@electron/remote/main/index.js';
 import * as path from 'path';
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import { fileURLToPath } from 'url';
-import { cleanImage, cleanVideo, createZipExport, readMetadata } from '../backend/cleaner';
-import { electronLog } from '../backend/logger';
+import { cleanImage, cleanVideo, createZipExport, readMetadata } from '../backend/cleaner.js';
+import { electronLog } from '../backend/logger.js';
 import { 
   registerUser, 
   verifyUser, 
@@ -21,7 +21,7 @@ import {
   completePasswordReset,
   exportUserData,
   importUserData
-} from '../backend/auth';
+} from '../backend/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

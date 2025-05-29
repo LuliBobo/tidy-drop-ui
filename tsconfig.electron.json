@@ -7,10 +7,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "outDir": "dist",
+    "outDir": "dist-electron",
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -19,5 +18,10 @@
     "resolveJsonModule": true
   },
   "include": ["vite.config.ts", "src/main/**/*", "src/preload/**/*", "src/backend/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules", 
+    "src/backend/webConfig.ts", 
+    "src/backend/postgresAdapter.ts",
+    "src/backend/netlifyAdapter.ts"
+  ]
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { Button } from "./button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "./sheet"
-import { CookiePolicyDialog } from "./cookie-policy-dialog"
 
 const COOKIE_CONSENT_KEY = "cookie-consent"
 
@@ -118,14 +117,27 @@ export function CookieConsent() {
                     Save preferences
                   </Button>
                   <div className="flex justify-center">
-                    <CookiePolicyDialog variant="link" size="sm" className="px-0 h-auto text-sm" />
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="px-0 h-auto text-sm"
+                      onClick={() => window.open('/cookie-policy', '_blank')}
+                    >
+                      Cookie Policy
+                    </Button>
                   </div>
                 </div>
               </div>
             </SheetContent>
           </Sheet>
           {" · "}
-          <CookiePolicyDialog variant="link" className="px-0 h-auto" />
+          <Button 
+            variant="link" 
+            className="px-0 h-auto"
+            onClick={() => window.open('/cookie-policy', '_blank')}
+          >
+            Cookie Policy
+          </Button>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleRejectAll}>

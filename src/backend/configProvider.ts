@@ -1,8 +1,8 @@
 // configProvider.ts - Configuration provider for the application
 import { app } from 'electron';
 import * as path from 'path';
-import { electronLog } from './logger';
-import { PlatformMode } from './databaseAdapter';
+import { electronLog } from './logger.js';
+import { PlatformMode } from './databaseAdapter.js';
 
 /**
  * Configuration provider class for the application

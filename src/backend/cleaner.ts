@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs-extra';
 import electronLog from 'electron-log';
-import { appendToCleaningLog } from './logger';
+import { appendToCleaningLog } from './logger.js';
 
 // Nastavenie logovania
 electronLog.transports.file.resolvePathFn = () => path.join(process.env.HOME || '', 'DropTidy/logs.txt');
