@@ -14,6 +14,13 @@ import SettingsModal from './SettingsModal';
 import UpgradeModal from './UpgradeModal';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
+import { 
+  cleanImageMetadata, 
+  cleanVideoMetadata, 
+  isWebEnvironment, 
+  downloadFile,
+  createCleanedFilesZip
+} from '@/lib/web-file-cleaner';
 
 // Using global type definitions from /src/types/electron.d.ts
 
@@ -28,6 +35,7 @@ interface FileItem {
   cleanedSize?: number;
   metadata?: { [key: string]: string | number };
   error?: string;
+  cleanedBlob?: Blob; // For web environment cleaned files
 }
 
 export const FileCleaner: React.FC = () => {
@@ -93,6 +101,13 @@ export const FileCleaner: React.FC = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
+        if (isWebEnvironment()) {
+          // Web environment: use browser defaults
+          setOutputDir('Downloads'); // Browser downloads folder
+          setAutoOpenFolder(false); // Can't auto-open folders in browser
+          return;
+        }
+        
         if (!window.electron) {
           console.error("Electron not available");
           return;
@@ -107,6 +122,10 @@ export const FileCleaner: React.FC = () => {
         if (window.electron) {
           const homePath = await window.electron.app.getPath('home');
           setOutputDir(path.join(homePath, 'Cleaned'));
+        } else {
+          // Fallback for web environment
+          setOutputDir('Downloads');
+          setAutoOpenFolder(false);
         }
       }
     };
@@ -131,7 +150,8 @@ export const FileCleaner: React.FC = () => {
     originalSize?: number,
     cleanedSize?: number,
     metadata?: { [key: string]: string | number },
-    error?: string
+    error?: string,
+    cleanedBlob?: Blob
   ) => {
     setFiles(prevFiles => 
       prevFiles.map(file => 
@@ -143,7 +163,8 @@ export const FileCleaner: React.FC = () => {
               originalSize, 
               cleanedSize, 
               metadata, 
-              error 
+              error,
+              cleanedBlob 
             } 
           : file
       )
@@ -169,67 +190,140 @@ export const FileCleaner: React.FC = () => {
     const isVideo = fileItem.file.type.startsWith('video/');
 
     try {
-      if (isImage) {
-        const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron?.ipcRenderer.invoke('clean-image', fileItem.path);
-        if (result && result?.success) {
-          incrementDailyQuota();
-          setRemainingQuota(getRemainingQuota());
-          
-          // Handle HEIC file conversions
-          if (result && result?.convertedPath) {
-            // For converted HEIC files, use the converted path directly
+      // Check if we're in web environment (no Electron)
+      if (isWebEnvironment()) {
+        // Use web-compatible cleaning functions
+        if (isImage) {
+          const result = await cleanImageMetadata(fileItem.file);
+          if (result.success && result.cleanedBlob) {
+            incrementDailyQuota();
+            setRemainingQuota(getRemainingQuota());
+            
+            const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
             updateFileStatus(
               fileItem.file.name,
               'success',
-              result?.convertedPath,
-              result?.originalSize,
-              result?.cleanedSize,
-              result?.metadata,
-              'Converted to JPEG format'
+              cleanedFileName, // Web output path is just the filename
+              result.originalSize,
+              result.cleanedSize,
+              result.metadata,
+              undefined,
+              result.cleanedBlob
             );
+            
+            toast({
+              title: "Image cleaned successfully",
+              description: `${fileItem.file.name} has been processed and is ready for download.`,
+            });
           } else {
+            updateFileStatus(
+              fileItem.file.name, 
+              'error', 
+              undefined, 
+              undefined, 
+              undefined, 
+              undefined, 
+              result.error || 'Failed to clean image'
+            );
+          }
+        } else if (isVideo) {
+          const result = await cleanVideoMetadata(fileItem.file);
+          if (result.success && result.cleanedBlob) {
+            incrementDailyQuota();
+            setRemainingQuota(getRemainingQuota());
+            
+            const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
+            updateFileStatus(
+              fileItem.file.name,
+              'success',
+              cleanedFileName,
+              result.originalSize,
+              result.cleanedSize,
+              result.metadata,
+              undefined,
+              result.cleanedBlob
+            );
+            
+            toast({
+              title: "Video processed",
+              description: `${fileItem.file.name} has been processed. Note: Full video metadata removal requires server-side processing.`,
+            });
+          } else {
+            updateFileStatus(
+              fileItem.file.name, 
+              'error', 
+              undefined, 
+              undefined, 
+              undefined, 
+              undefined, 
+              result.error || 'Failed to process video'
+            );
+          }
+        }
+      } else {
+        // Use Electron APIs (original behavior)
+        if (isImage) {
+          const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
+          const result = await window.electron?.ipcRenderer.invoke('clean-image', fileItem.path);
+          if (result && result?.success) {
+            incrementDailyQuota();
+            setRemainingQuota(getRemainingQuota());
+            
+            // Handle HEIC file conversions
+            if (result && result?.convertedPath) {
+              // For converted HEIC files, use the converted path directly
+              updateFileStatus(
+                fileItem.file.name,
+                'success',
+                result?.convertedPath,
+                result?.originalSize,
+                result?.cleanedSize,
+                result?.metadata,
+                'Converted to JPEG format'
+              );
+            } else {
+              updateFileStatus(
+                fileItem.file.name,
+                'success',
+                path.join(outputDir, cleanedFileName),
+                result?.originalSize,
+                result?.cleanedSize,
+                result?.metadata
+              );
+            }
+            
+            // Auto-open folder after cleaning if enabled
+            if (autoOpenFolder && result && result?.success) {
+              window.electron?.app.openFolder(outputDir);
+            }
+          } else {
+            updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean image');
+          }
+        } else if (isVideo) {
+          const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
+          const result = await window.electron?.ipcRenderer.invoke(
+          'clean-video',
+            fileItem.path,
+            path.join(outputDir, cleanedFileName)
+          );
+          if (result && result?.success) {
+            incrementDailyQuota();
+            setRemainingQuota(getRemainingQuota());
             updateFileStatus(
               fileItem.file.name,
               'success',
               path.join(outputDir, cleanedFileName),
               result?.originalSize,
-              result?.cleanedSize,
-              result?.metadata
+              result?.cleanedSize
             );
+            
+            // Auto-open folder after cleaning if enabled
+            if (autoOpenFolder && result && result?.success) {
+              window.electron?.app.openFolder(outputDir);
+            }
+          } else {
+            updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean video');
           }
-          
-          // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result && result?.success) {
-            window.electron?.app.openFolder(outputDir);
-          }
-        } else {
-          updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean image');
-        }
-      } else if (isVideo) {
-        const cleanedFileName = `cleaned_${Date.now()}_${fileItem.file.name}`;
-        const result = await window.electron?.ipcRenderer.invoke(
-        'clean-video',
-          fileItem.path,
-          path.join(outputDir, cleanedFileName)
-        );
-        if (result && result?.success) {
-          incrementDailyQuota();
-          setRemainingQuota(getRemainingQuota());
-          updateFileStatus(
-            fileItem.file.name,
-            'success',
-            path.join(outputDir, cleanedFileName),
-            result?.originalSize,
-            result?.cleanedSize
-          );
-          
-          // Auto-open folder after cleaning if enabled
-          if (autoOpenFolder && result && result?.success) {
-            window.electron?.app.openFolder(outputDir);
-          }
-        } else {
-          updateFileStatus(fileItem.file.name, 'error', undefined, undefined, undefined, undefined, 'Failed to clean video');
         }
       }
     } catch (error) {
@@ -266,6 +360,36 @@ export const FileCleaner: React.FC = () => {
     try {
       setIsExporting(true);
       
+      if (isWebEnvironment()) {
+        // Web environment: create ZIP from cleaned blobs
+        const successfulFiles = files
+          .filter(f => f.status === 'success' && f.cleanedBlob)
+          .map(f => ({ 
+            name: f.file.name, 
+            blob: f.cleanedBlob! 
+          }));
+        
+        if (successfulFiles.length === 0) {
+          toast({
+            title: "No files to export",
+            description: "No successfully cleaned files available for export.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const zipBlob = await createCleanedFilesZip(successfulFiles);
+        const zipFilename = `cleaned_files_${Date.now()}.zip`;
+        downloadFile(zipBlob, zipFilename);
+        
+        toast({
+          title: "Export successful",
+          description: `${successfulFiles.length} files exported to ${zipFilename}`,
+        });
+        
+        return;
+      }
+      
       if (!window.electron) {
         throw new Error("Electron not available");
       }
@@ -294,8 +418,30 @@ export const FileCleaner: React.FC = () => {
   };
 
   const handleOpenOutputFolder = useCallback(() => {
+    if (isWebEnvironment()) {
+      toast({
+        title: "Downloads folder",
+        description: "Cleaned files are downloaded to your browser's Downloads folder.",
+      });
+      return;
+    }
     window.electron?.app.openFolder(outputDir);
   }, [outputDir]);
+
+  const handleDownloadFile = useCallback((fileItem: FileItem) => {
+    if (isWebEnvironment() && fileItem.cleanedBlob) {
+      const cleanedFileName = `cleaned_${fileItem.file.name}`;
+      downloadFile(fileItem.cleanedBlob, cleanedFileName);
+      
+      toast({
+        title: "Download started",
+        description: `${cleanedFileName} is being downloaded.`,
+      });
+    } else if (!isWebEnvironment() && fileItem.outputPath) {
+      // In Electron environment, reveal the file in file explorer
+      window.electron?.app.showItemInFolder(fileItem.outputPath);
+    }
+  }, []);
 
   // Function to format metadata for display
   const formatMetadataValue = (value: unknown): string => {
@@ -444,19 +590,37 @@ export const FileCleaner: React.FC = () => {
           {files.map((file) => (
             <li
               key={file.file.name}
-              className={`flex justify-between items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition-colors ${
+              className={`flex justify-between items-center p-3 border rounded transition-colors ${
                 selectedFile?.file.name === file.file.name ? 'border-blue-500' : ''
               }`}
-              onClick={() => setSelectedFile(file)}
             >
-              <div className="flex flex-col flex-grow gap-2">
+              <div 
+                className="flex flex-col flex-grow gap-2 cursor-pointer hover:bg-gray-50"
+                onClick={() => setSelectedFile(file)}
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{file.file.name}</span>
-                  <FileStatusIndicator 
-                    status={file.status} 
-                    error={file.error}
-                    className="text-sm px-3 py-1" 
-                  />
+                  <div className="flex items-center gap-2">
+                    <FileStatusIndicator 
+                      status={file.status} 
+                      error={file.error}
+                      className="text-sm px-3 py-1" 
+                    />
+                    {file.status === 'success' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadFile(file);
+                        }}
+                        className="h-8 px-2"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        {isWebEnvironment() ? 'Download' : 'Show'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 {file.status === 'success' && file.originalSize && file.cleanedSize && (

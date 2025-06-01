@@ -14,6 +14,7 @@ import SignIn from "./pages/SignIn";
 import ResetPassword from "./pages/ResetPassword";
 import AdminPage from "./pages/AdminPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { FileCleaner } from "./components/FileCleaner";
 import { LicenseContext, LicenseLevel } from "@/lib/license-context";
 import { CookieConsent } from "./components/ui/cookie-consent";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -33,6 +34,7 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/cleaner" element={<FileCleaner />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/cookie-policy" element={<CookiePolicyPage />} />
                 <Route path="/terms-of-service" element={<TermsOfServicePage />} />
