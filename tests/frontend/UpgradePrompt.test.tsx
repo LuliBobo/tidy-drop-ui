@@ -1,13 +1,12 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
-import { vi } from 'vitest';
 
 describe('UpgradePrompt Component', () => {
-  const mockOnUpgradeClick = vi.fn();
+  const mockOnUpgradeClick = jest.fn();
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   test('displays correct usage information when under limit', () => {

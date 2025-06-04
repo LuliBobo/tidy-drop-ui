@@ -1,18 +1,17 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import SettingsModal from '@/components/SettingsModal';
 import { mockIpcRenderer } from 'electron-mock-ipc';
 
 // Mock the toasts
-vi.mock('@/hooks/use-toast', () => ({
+jest.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: vi.fn(),
+    toast: jest.fn(),
   }),
 }));
 
 // Mock the Electron IPC renderer
-vi.mock('electron', () => ({
+jest.mock('electron', () => ({
   ipcRenderer: mockIpcRenderer,
 }));
 
@@ -20,16 +19,16 @@ describe('SettingsModal Component', () => {
   // Define test props
   const mockProps = {
     isOpen: true,
-    onOpenChange: vi.fn(),
+    onOpenChange: jest.fn(),
     outputDir: '/test/output/path',
-    setOutputDir: vi.fn(),
+    setOutputDir: jest.fn(),
     autoOpenFolder: true,
-    setAutoOpenFolder: vi.fn(),
+    setAutoOpenFolder: jest.fn(),
   };
 
   beforeEach(() => {
     // Reset mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     
     // Setup IPC mock
     global.window.electron = {
