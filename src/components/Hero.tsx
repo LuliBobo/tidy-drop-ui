@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { FileCheck, Play, Upload, FileVideo, FileImage } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   const [dragActive, setDragActive] = useState(false);
@@ -64,9 +65,11 @@ const Hero = () => {
             DropTidy removes hidden metadata from your media files. Just drag, clean, and download.
           </p>
           <div className="flex flex-wrap gap-4 justify-center mb-12">
-            <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white" size="lg">
-              Get Started Free
-            </Button>
+            <Link to="/create-account">
+              <Button className="bg-[#6366F1] hover:bg-[#6366F1]/90 text-white" size="lg">
+                Get Started Free
+              </Button>
+            </Link>
             <Button variant="outline" className="border-[#6366F1] text-[#6366F1] hover:bg-[#6366F1]/10" size="lg" onClick={() => scrollToSection('features')}>
               See Features
             </Button>
