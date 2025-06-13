@@ -30,7 +30,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   } else {
     // In development, load from the dev server
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:3000');
     // Open DevTools in development
     mainWindow.webContents.openDevTools();
   }
