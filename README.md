@@ -1,8 +1,14 @@
-# Welcome to your Lovable project
+# DropTidy - Simple Metadata Removal Tool
 
-## Project info
+DropTidy is a lightweight application that allows users to easily remove metadata from photos and videos. The app features a clean, simple interface that works in both web browsers and as an Electron desktop application.
 
-**URL**: https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16
+## Features
+
+- **Simple Drag & Drop Interface** for uploading files
+- **Clean Metadata** from images and videos
+- **Cross-Platform Support** for web and desktop
+- **Zero External Dependencies** for processing
+- **Privacy-Focused** - all processing happens locally
 
 ## How can I edit this code?
 
