@@ -1,73 +1,106 @@
-# Welcome to your Lovable project
+# DropTidy - Remove Metadata from Images and Videos
 
-## Project info
+A simple, clean application for removing metadata from images and videos to protect your privacy.
 
-**URL**: https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16
+![DropTidy Screenshot](https://via.placeholder.com/800x450.png?text=DropTidy+Screenshot)
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- 🖼️ **Image Metadata Removal** - Remove EXIF data from JPG/PNG images
+- 🎥 **Video Metadata Removal** - Strip metadata from MP4/MOV videos  
+- 🌐 **Cross-Platform** - Works in web browsers and as an Electron desktop app
+- 🧹 **Simple Interface** - Drag & drop functionality with clean, minimal UI
+- 🛡️ **Privacy Focus** - All processing happens locally, no uploads to servers
 
-**Use Lovable**
+## Development
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16) and start prompting.
+### Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 16+ and npm
+- For Electron features: ExifTool and FFmpeg installed on your system
 
-**Use your preferred IDE**
+### Installation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# Clone the repository
+git clone https://github.com/LuliBobo/tidy-drop-ui.git
+cd tidy-drop-ui
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Install dependencies
+npm install
 ```
 
-**Edit a file directly in GitHub**
+### Running the Application
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Web Development Mode (browser only)
+npm run dev
 
-**Use GitHub Codespaces**
+# Electron Development Mode
+npm run electron:dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Build for production (both web and desktop)
+npm run build
 
-## What technologies are used for this project?
+# Start Electron app with production build
+npm start
 
-This project is built with:
+# Package Electron desktop apps
+npm run electron:build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Branch Structure
 
-## How can I deploy this project?
+- **main** - Stable production branch
+- **local** - Testing branch for local development
+- **net** - Production branch for web deployment
 
-Simply open [Lovable](https://lovable.dev/projects/772f5722-7eac-44f1-91a9-b4b55424ef16) and click on Share -> Publish.
+## Usage
 
-## Can I connect a custom domain to my Lovable project?
+1. **Upload Files**
+   - Drag and drop images or videos into the drop zone
+   - Or click "Select Files" to choose files using the file browser
 
-Yes, you can!
+2. **Process Files**
+   - Click "Remove Metadata" to clean the files
+   - Files are processed locally on your device
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+3. **Download**
+   - Cleaned files will automatically download or be saved to your chosen location
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Project Structure
+
+```
+├── electron/               # Electron app files
+│   ├── main.js             # Main process
+│   └── preload.js          # Preload script
+├── src/
+│   ├── components/
+│   │   └── Dropzone.tsx    # File upload component
+│   ├── utils/
+│   │   └── removeMetadata.ts  # Metadata removal utility
+│   ├── App.tsx             # Main React component
+│   └── main.tsx            # Entry point
+├── index.html              # HTML template
+├── electron-builder.yml    # Electron packaging config
+└── package.json            # Project dependencies
+```
+
+## Technical Details
+
+### Technology Stack
+
+- **Frontend**: React + TypeScript + Tailwind CSS
+- **Build System**: Vite
+- **Desktop App**: Electron
+- **Metadata Processing**: ExifTool (images), FFmpeg (videos)
+
+### Security Features
+
+- Content Security Policy (CSP) to prevent XSS attacks
+- IPC validation to prevent unauthorized channel access
+- Local processing of all files (no server uploads)
+
+## License
+
+MIT © 2025 DropTidy

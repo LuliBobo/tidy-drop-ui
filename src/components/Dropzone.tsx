@@ -118,38 +118,11 @@ const Dropzone: React.FC<DropzoneProps> = ({ onFilesAdded, maxFiles = 10 }) => {
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {files.map((file, index) => (
-              <div
-                key={`${file.path}-${index}`}
-                className="relative group rounded-lg border bg-white p-2 shadow-sm"
-              >
-                {file.path.startsWith('image/') ? (
-                  <div className="aspect-square w-full rounded-md overflow-hidden">
-                      src={URL.createObjectURL(file.file)}
-                      src={URL.createObjectURL(file)}
-                      alt={file.path}
-                      className="h-full w-full object-cover"
-                      onLoad={() => URL.revokeObjectURL(URL.createObjectURL(file.file))}
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center">
-                    <FileVideo className="h-8 w-8 text-gray-400" />
-                  </div>
-                )}
-                <div className="mt-2 text-xs truncate">{file.path}</div>
-                <div className="text-xs text-gray-500">
-                  {formatFileSize(file.size)}
-                </div>
-                <div className="flex items-center gap-2">
-                  {file.status === 'idle' && (
-                    <button onClick={() => handleClean(file.path, index)} className="ml-2 px-2 py-1 bg-blue-500 text-white rounded">
-                      Vyčistiť
-                    </button>
-                  )}
-                  {file.status === 'cleaning' && <span>🟡 Cleaning…</span>}
-                  {file.status === 'success' && <span>✅ Cleaned successfully</span>}
-                  {file.status === 'error' && <span>❌ Failed to clean</span>}
-                </div>
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">{file.name}</span>
+                <span className="text-xs text-gray-500">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </span>
               </div>
             ))}
           </div>
