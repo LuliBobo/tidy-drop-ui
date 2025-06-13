@@ -31,7 +31,7 @@ export async function removeMetadata(
       }
       
       // Parse the result and return as blob
-      return new Blob([result], { type: file.type });
+      return new Blob([result as BlobPart], { type: file.type });
     } else {
       // Web environment - use client-side processing
       return await removeMetadataClientSide(file, options);
@@ -131,7 +131,7 @@ async function saveFileTemporarily(file: File): Promise<string> {
     data: Array.from(uint8Array)
   });
   
-  return result.path;
+  return (result as { path: string }).path;
 }
 
 /**
@@ -157,7 +157,7 @@ declare global {
   interface Window {
     electron?: {
       ipcRenderer: {
-        invoke(channel: string, data?: any): Promise<any>;
+        invoke(channel: string, data?: unknown): Promise<unknown>;
       };
     };
   }

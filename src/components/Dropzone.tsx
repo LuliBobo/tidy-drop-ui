@@ -111,16 +111,9 @@ export const Dropzone: React.FC = () => {
             {files.map((file, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium">{file.name}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </span>
-                  {file.processed && (
-                    <span className="text-xs text-green-500 font-medium px-2 py-1 bg-green-50 rounded-full">
-                      Processed ✓
-                    </span>
-                  )}
-                </div>
+                <span className="text-xs text-gray-500">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </span>
               </div>
             ))}
           </div>
