@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "NODE_NO_WARNINGS=1 vite",
     "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
