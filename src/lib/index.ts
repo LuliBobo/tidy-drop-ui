@@ -4,6 +4,7 @@
  */
 
 // Re-export consolidated modules
-export * from './hooks';
 export * from './utils';
-export * from './contexts';
+
+// Re-export license context directly (since contexts/index.ts is empty)
+export { LicenseContext, LicenseContextType, LicenseLevel } from './license-context';
