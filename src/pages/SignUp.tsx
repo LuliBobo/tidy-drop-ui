@@ -1,4 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Home } from 'lucide-react';
 
 const SignUp: React.FC = () => {
   return (
@@ -8,6 +11,15 @@ const SignUp: React.FC = () => {
         <p className="text-center text-gray-600 mt-4">
           Sign up functionality coming soon.
         </p>
+        
+        <div className="flex justify-center mt-8">
+          <Link to="/">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Home
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

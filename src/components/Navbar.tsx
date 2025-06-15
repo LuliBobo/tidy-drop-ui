@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -38,6 +38,8 @@ const navLinks: NavLink[] = [
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(getPreferredTheme());
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
@@ -64,24 +66,39 @@ const Navbar = () => {
   };
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
-      setIsMenuOpen(false);
+    // If we're not on the home page, navigate there first
+    if (location.pathname !== '/') {
+      navigate('/', { replace: true });
+      // Wait a bit for the navigation to complete, then scroll
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    } else {
+      // We're already on the home page, just scroll
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth'
+        });
+      }
     }
+    setIsMenuOpen(false);
   };
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-background z-50 shadow">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <DropTidyLogo size={36} />
           <span className="text-xl font-bold text-indigo-600" aria-label="DropTidy" style={{letterSpacing: "0.04em"}}>
             DropTidy
           </span>
-        </div>
+        </Link>
         <div className="hidden md:flex items-center space-x-4">
           {navLinks.map((link) => (
             <button key={link.href} onClick={() => scrollToSection(link.href.slice(1))} className="text-gray-700 hover:text-indigo-500 transition-colors">
@@ -90,6 +107,12 @@ const Navbar = () => {
           ))}
           <Link to="/privacy">
             <Button variant="outline">Privacy Policy</Button>
+          </Link>
+          <Link to="/cookie-policy">
+            <Button variant="outline">Cookie Policy</Button>
+          </Link>
+          <Link to="/signup">
+            <Button variant="default">Sign Up</Button>
           </Link>
           <button
             className="theme-toggle"
@@ -144,7 +167,13 @@ const Navbar = () => {
                 </Button>
               ))}
               <Link to="/privacy">
-                <Button variant="outline" className="justify-start">Privacy Policy</Button>
+                <Button variant="outline" className="justify-start w-full">Privacy Policy</Button>
+              </Link>
+              <Link to="/cookie-policy">
+                <Button variant="outline" className="justify-start w-full">Cookie Policy</Button>
+              </Link>
+              <Link to="/signup">
+                <Button variant="default" className="justify-start w-full">Sign Up</Button>
               </Link>
               <button
                 className="theme-toggle"
